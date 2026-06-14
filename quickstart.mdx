@@ -17,7 +17,7 @@ is a read-only call that works with any token role.
 <CodeGroup>
 
 ```bash cURL
-curl -X POST https://app.tequipy.com/api/integration/users/query \
+curl -X POST https://prod.backend.tequipy.com/integration/users/query \
   -H "Authorization: Bearer $TEQUIPY_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{}'
@@ -27,7 +27,7 @@ curl -X POST https://app.tequipy.com/api/integration/users/query \
 import requests, os
 
 resp = requests.post(
-    "https://app.tequipy.com/api/integration/users/query",
+    "https://prod.backend.tequipy.com/integration/users/query",
     headers={"Authorization": f"Bearer {os.environ['TEQUIPY_TOKEN']}"},
     json={},
 )
@@ -37,7 +37,7 @@ print(resp.json())
 
 ```javascript Node.js
 const resp = await fetch(
-  "https://app.tequipy.com/api/integration/users/query",
+  "https://prod.backend.tequipy.com/integration/users/query",
   {
     method: "POST",
     headers: {
@@ -88,7 +88,7 @@ You need the employee's user ID and the IDs of the equipment to collect.
 <Step title="Create the offboarding">
 
 ```bash cURL
-curl -X POST https://app.tequipy.com/api/integration/offboardings \
+curl -X POST https://prod.backend.tequipy.com/integration/offboardings \
   -H "Authorization: Bearer $TEQUIPY_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -112,7 +112,7 @@ curl -X POST https://app.tequipy.com/api/integration/offboardings \
 <Step title="Track the offboarding status">
 
 ```bash cURL
-curl https://app.tequipy.com/api/integration/offboardings/<OFFBOARDING_ID> \
+curl https://prod.backend.tequipy.com/integration/offboardings/<OFFBOARDING_ID> \
   -H "Authorization: Bearer $TEQUIPY_TOKEN"
 ```
 
@@ -134,7 +134,7 @@ Send equipment from your storage to an employee's address in one API call.
 <Step title="Create the redeployment">
 
 ```bash cURL
-curl -X POST https://app.tequipy.com/api/integration/redeployments \
+curl -X POST https://prod.backend.tequipy.com/integration/redeployments \
   -H "Authorization: Bearer $TEQUIPY_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -156,7 +156,7 @@ curl -X POST https://app.tequipy.com/api/integration/redeployments \
 <Step title="Track the delivery status">
 
 ```bash cURL
-curl https://app.tequipy.com/api/integration/redeployments/<REDEPLOYMENT_ID> \
+curl https://prod.backend.tequipy.com/integration/redeployments/<REDEPLOYMENT_ID> \
   -H "Authorization: Bearer $TEQUIPY_TOKEN"
 ```
 

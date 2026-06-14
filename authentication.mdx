@@ -21,7 +21,7 @@ Authorization: Bearer <your-jwt-token>
 <CodeGroup>
 
 ```bash cURL
-curl https://app.tequipy.com/api/integration/orders/query \
+curl https://prod.backend.tequipy.com/integration/orders/query \
   -H "Authorization: Bearer $TEQUIPY_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{}'
@@ -31,7 +31,7 @@ curl https://app.tequipy.com/api/integration/orders/query \
 import requests
 
 resp = requests.post(
-    "https://app.tequipy.com/api/integration/orders/query",
+    "https://prod.backend.tequipy.com/integration/orders/query",
     headers={"Authorization": f"Bearer {token}"},
     json={},
 )
@@ -41,7 +41,7 @@ print(resp.json())
 
 ```javascript Node.js
 const resp = await fetch(
-  "https://app.tequipy.com/api/integration/orders/query",
+  "https://prod.backend.tequipy.com/integration/orders/query",
   {
     method: "POST",
     headers: {

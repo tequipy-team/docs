@@ -6,7 +6,7 @@ info:
     Public/partner API for Tequipy integrations.
     All endpoints require a Bearer JWT token obtained via the Tequipy authentication flow.
 servers:
-  - url: https://app.tequipy.com/api
+  - url: https://prod.backend.tequipy.com
 security:
   - bearerAuth: []
 tags:
