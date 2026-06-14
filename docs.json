@@ -4,9 +4,12 @@
   "name": "Tequipy API",
   "description": "Public/partner API for Tequipy integrations.",
   "colors": {
-    "primary": "#227AF7",
-    "light": "#5C9FFB",
-    "dark": "#1B62C5"
+    "primary": "#FF5C1A",
+    "light": "#FF7A45",
+    "dark": "#111111"
+  },
+  "background": {
+    "color": { "light": "#FFFFFF", "dark": "#0E0E0E" }
   },
   "favicon": "/favicon.svg",
   "navigation": {
