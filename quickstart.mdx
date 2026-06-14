@@ -1,0 +1,182 @@
+---
+title: "Quickstart"
+description: "Make your first Tequipy API call in minutes."
+---
+
+<Info>
+  You'll need an API token to follow this guide. Contact us in your client Slack
+  channel or email support@tequipy.com to obtain one, then store it in an
+  environment variable: `export TEQUIPY_TOKEN=<your-token>`.
+</Info>
+
+## Step 1: Verify your token
+
+The simplest way to confirm your token works is to query your users list. This
+is a read-only call that works with any token role.
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://app.tequipy.com/api/integration/users/query \
+  -H "Authorization: Bearer $TEQUIPY_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
+```python Python
+import requests, os
+
+resp = requests.post(
+    "https://app.tequipy.com/api/integration/users/query",
+    headers={"Authorization": f"Bearer {os.environ['TEQUIPY_TOKEN']}"},
+    json={},
+)
+resp.raise_for_status()
+print(resp.json())
+```
+
+```javascript Node.js
+const resp = await fetch(
+  "https://app.tequipy.com/api/integration/users/query",
+  {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.TEQUIPY_TOKEN}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({}),
+  }
+);
+const data = await resp.json();
+console.log(data);
+```
+
+</CodeGroup>
+
+A successful response looks like:
+
+```json
+{
+  "content": [
+    {
+      "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "firstName": "Jane",
+      "lastName": "Doe",
+      "email": "jane.doe@yourcompany.com",
+      "state": "ACTIVE",
+      "role": "EMPLOYEE"
+    }
+  ],
+  "totalElements": 42,
+  "totalPages": 3,
+  "size": 20,
+  "number": 0
+}
+```
+
+## Step 2: Common workflows
+
+Pick the workflow that matches your use case.
+
+### Offboard a departing employee
+
+When an employee leaves, create an offboarding to arrange equipment collection.
+You need the employee's user ID and the IDs of the equipment to collect.
+
+<Steps>
+
+<Step title="Create the offboarding">
+
+```bash cURL
+curl -X POST https://app.tequipy.com/api/integration/offboardings \
+  -H "Authorization: Bearer $TEQUIPY_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userId": "<EMPLOYEE_ID>",
+    "offboardingEquipmentIds": ["<EQUIPMENT_ID>"],
+    "lastWorkingDayAt": "2025-07-31T17:00:00Z",
+    "pickUpDetails": {
+      "fullName": "Jane Doe",
+      "privateEmail": "jane.personal@example.com",
+      "phoneNumber": "+49 30 12345678",
+      "streetLine1": "Unter den Linden 1",
+      "city": "Berlin",
+      "postalCode": "10117",
+      "countryCode": "DE"
+    }
+  }'
+```
+
+</Step>
+
+<Step title="Track the offboarding status">
+
+```bash cURL
+curl https://app.tequipy.com/api/integration/offboardings/<OFFBOARDING_ID> \
+  -H "Authorization: Bearer $TEQUIPY_TOKEN"
+```
+
+The `state` field progresses through:
+`INITIATED` → `MATERIALS_SENT` → `COURIER_SCHEDULED` → `PICKED_UP` → `COMPLETED`
+
+</Step>
+
+</Steps>
+
+---
+
+### Redeploy equipment to a new hire
+
+Send equipment from your storage to an employee's address in one API call.
+
+<Steps>
+
+<Step title="Create the redeployment">
+
+```bash cURL
+curl -X POST https://app.tequipy.com/api/integration/redeployments \
+  -H "Authorization: Bearer $TEQUIPY_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "employeeId": "<EMPLOYEE_ID>",
+    "storageEquipmentIds": ["<USER_EQUIPMENT_ID>"],
+    "startDate": "2025-08-01",
+    "deliveryAddress": {
+      "fullName": "Alex Smith",
+      "streetLine1": "Rosenthaler Str. 40",
+      "city": "Berlin",
+      "postalCode": "10178",
+      "countryCode": "DE"
+    }
+  }'
+```
+
+</Step>
+
+<Step title="Track the delivery status">
+
+```bash cURL
+curl https://app.tequipy.com/api/integration/redeployments/<REDEPLOYMENT_ID> \
+  -H "Authorization: Bearer $TEQUIPY_TOKEN"
+```
+
+The `state` field progresses through:
+`INITIATED` → `PROCESSING` → `SENT` → `OUT_FOR_DELIVERY` → `COMPLETED`
+
+</Step>
+
+</Steps>
+
+## Next steps
+
+<CardGroup cols={3}>
+  <Card title="API Reference" icon="code" href="/api-reference">
+    Full endpoint reference, request/response schemas, and try-it-out console.
+  </Card>
+  <Card title="Authentication" icon="lock" href="/authentication">
+    Token security, header format, and error handling for auth failures.
+  </Card>
+  <Card title="Introduction" icon="book-open" href="/introduction">
+    Overview of all resources — users, equipment, offboardings, and more.
+  </Card>
+</CardGroup>
