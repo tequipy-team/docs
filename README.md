@@ -8,7 +8,6 @@ auto-generated from `api-reference/openapi.yaml`, so updating that file updates 
 ```
 tequipy-docs/
 ├── docs.json                  # Mintlify config (theme, nav, colors)
-├── introduction.mdx           # Landing page
 ├── authentication.mdx         # Auth guide
 └── api-reference/
     └── openapi.yaml           # Your OpenAPI spec → auto-generated reference
