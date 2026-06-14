@@ -1,0 +1,2364 @@
+openapi: "3.0.3"
+info:
+  title: Tequipy Integration API
+  version: v1
+  description: >
+    Public/partner API for Tequipy integrations.
+    All endpoints require a Bearer JWT token obtained via the Tequipy authentication flow.
+servers:
+  - url: https://app.tequipy.com/api
+security:
+  - bearerAuth: []
+tags:
+  - name: Orders
+  - name: Users
+  - name: User Equipment
+  - name: Offboardings
+  - name: Collections
+  - name: Redeployments
+  - name: Invoices
+  - name: Equipments
+  - name: Company Entities
+  - name: Company Addresses
+  - name: Countries
+  - name: Tags
+
+paths:
+
+  # ──────────────────────────── ORDERS ────────────────────────────
+
+  /integration/orders:
+    post:
+      tags: [Orders]
+      summary: Create order
+      operationId: createOrder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrderRequest'
+      responses:
+        '200':
+          description: Created order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponse'
+
+  /integration/orders/query:
+    post:
+      tags: [Orders]
+      summary: Query orders (paginated)
+      operationId: queryOrders
+      parameters:
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/size'
+        - $ref: '#/components/parameters/sort'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderQueryRequest'
+      responses:
+        '200':
+          description: Paginated list of orders
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageOrderResponse'
+
+  /integration/orders/{id}:
+    get:
+      tags: [Orders]
+      summary: Get order by ID
+      operationId: getOrder
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Order details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponse'
+
+  # ──────────────────────────── USERS ────────────────────────────
+
+  /integration/users:
+    post:
+      tags: [Users]
+      summary: Create employee
+      operationId: createEmployee
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEmployeeRequest'
+      responses:
+        '200':
+          description: Created user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+
+  /integration/users/query:
+    post:
+      tags: [Users]
+      summary: Query users (paginated)
+      operationId: queryUsers
+      parameters:
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/size'
+        - $ref: '#/components/parameters/sort'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UsersQueryApiRequest'
+      responses:
+        '200':
+          description: Paginated list of users
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageUserResponse'
+
+  /integration/users/{id}:
+    get:
+      tags: [Users]
+      summary: Get user by ID
+      operationId: getUser
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+    patch:
+      tags: [Users]
+      summary: Update user
+      operationId: updateUser
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+
+  /integration/users/{id}/archive:
+    post:
+      tags: [Users]
+      summary: Archive user
+      operationId: archiveUser
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ArchiveUserRequest'
+      responses:
+        '200':
+          description: Archived user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+
+  # ──────────────────────────── USER EQUIPMENT ────────────────────────────
+
+  /integration/user-equipment:
+    post:
+      tags: [User Equipment]
+      summary: Create user-equipment assignment
+      operationId: createUserEquipment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserEquipmentRequest'
+      responses:
+        '200':
+          description: Created user-equipment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserEquipmentResponse'
+
+  /integration/user-equipment/{id}:
+    get:
+      tags: [User Equipment]
+      summary: Get user-equipment by ID
+      operationId: getUserEquipment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User-equipment details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserEquipmentResponse'
+    patch:
+      tags: [User Equipment]
+      summary: Update user-equipment
+      operationId: updateUserEquipment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserEquipmentRequest'
+      responses:
+        '200':
+          description: Updated user-equipment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserEquipmentResponse'
+
+  /integration/user-equipments/query:
+    post:
+      tags: [User Equipment]
+      summary: Query user-equipments (paginated)
+      operationId: queryUserEquipments
+      parameters:
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/size'
+        - $ref: '#/components/parameters/sort'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserEquipmentQueryRequest'
+      responses:
+        '200':
+          description: Paginated list of user-equipments
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageUserEquipmentResponse'
+
+  # ──────────────────────────── OFFBOARDINGS ────────────────────────────
+
+  /integration/offboardings:
+    post:
+      tags: [Offboardings]
+      summary: Create offboarding
+      operationId: createOffboarding
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOffboardingRequest'
+      responses:
+        '200':
+          description: Created offboarding
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OffboardingResponse'
+
+  /integration/offboardings/query:
+    post:
+      tags: [Offboardings]
+      summary: Query offboardings (paginated)
+      operationId: queryOffboardings
+      parameters:
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/size'
+        - $ref: '#/components/parameters/sort'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OffboardingQueryRequest'
+      responses:
+        '200':
+          description: Paginated list of offboardings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageOffboardingResponse'
+
+  /integration/offboardings/{id}:
+    get:
+      tags: [Offboardings]
+      summary: Get offboarding by ID
+      operationId: getOffboarding
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Offboarding details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OffboardingResponse'
+
+  /integration/offboardings/{id}/cancel:
+    post:
+      tags: [Offboardings]
+      summary: Cancel offboarding
+      operationId: cancelOffboarding
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Cancelled offboarding
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OffboardingResponse'
+
+  # ──────────────────────────── COLLECTIONS ────────────────────────────
+
+  /integration/collections:
+    post:
+      tags: [Collections]
+      summary: Create equipment collection
+      operationId: createCollection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EquipmentCollectionRequest'
+      responses:
+        '200':
+          description: Created collection
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EquipmentCollectionResponse'
+
+  /integration/collections/query:
+    post:
+      tags: [Collections]
+      summary: Query collections (paginated)
+      operationId: queryCollections
+      parameters:
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/size'
+        - $ref: '#/components/parameters/sort'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EquipmentCollectionQueryRequest'
+      responses:
+        '200':
+          description: Paginated list of collections
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageEquipmentCollectionResponse'
+
+  /integration/collections/{id}:
+    get:
+      tags: [Collections]
+      summary: Get collection by ID
+      operationId: getCollection
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Collection details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EquipmentCollectionResponse'
+
+  /integration/collections/{id}/cancel:
+    post:
+      tags: [Collections]
+      summary: Cancel collection
+      operationId: cancelCollection
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Cancelled collection
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EquipmentCollectionResponse'
+
+  # ──────────────────────────── REDEPLOYMENTS ────────────────────────────
+
+  /integration/redeployments:
+    post:
+      tags: [Redeployments]
+      summary: Create equipment redeployment
+      operationId: createRedeployment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRedeploymentRequest'
+      responses:
+        '200':
+          description: Created redeployment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EquipmentRedeploymentResponse'
+
+  /integration/redeployments/query:
+    post:
+      tags: [Redeployments]
+      summary: Query redeployments (paginated)
+      operationId: queryRedeployments
+      parameters:
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/size'
+        - $ref: '#/components/parameters/sort'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EquipmentRedeploymentQueryRequest'
+      responses:
+        '200':
+          description: Paginated list of redeployments
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageEquipmentRedeploymentResponse'
+
+  /integration/redeployments/{id}:
+    get:
+      tags: [Redeployments]
+      summary: Get redeployment by ID
+      operationId: getRedeployment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Redeployment details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EquipmentRedeploymentResponse'
+
+  # ──────────────────────────── INVOICES ────────────────────────────
+
+  /integration/invoices/query:
+    post:
+      tags: [Invoices]
+      summary: Query invoices (paginated)
+      operationId: queryInvoices
+      parameters:
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/size'
+        - $ref: '#/components/parameters/sort'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvoiceQueryRequest'
+      responses:
+        '200':
+          description: Paginated list of invoices
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageInvoiceResponse'
+
+  /integration/invoices/{id}:
+    get:
+      tags: [Invoices]
+      summary: Get invoice by ID
+      operationId: getInvoice
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Invoice details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoiceResponse'
+
+  # ──────────────────────────── EQUIPMENTS ────────────────────────────
+
+  /integration/equipments/query:
+    post:
+      tags: [Equipments]
+      summary: Query equipments (paginated)
+      operationId: queryEquipments
+      parameters:
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/size'
+        - $ref: '#/components/parameters/sort'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EquipmentQueryRequest'
+      responses:
+        '200':
+          description: Paginated list of equipments
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageEquipmentResponse'
+
+  # ──────────────────────────── COMPANY ENTITIES ────────────────────────────
+
+  /integration/company-entities:
+    get:
+      tags: [Company Entities]
+      summary: List company entities (paginated)
+      operationId: getCompanyEntities
+      parameters:
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/size'
+        - $ref: '#/components/parameters/sort'
+      responses:
+        '200':
+          description: Paginated list of company entities
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageCompanyEntityResponse'
+
+  /integration/company-entities/{id}:
+    get:
+      tags: [Company Entities]
+      summary: Get company entity by ID
+      operationId: getCompanyEntity
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Company entity details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyEntityResponse'
+
+  # ──────────────────────────── COMPANY ADDRESSES ────────────────────────────
+
+  /integration/company-addresses/query:
+    post:
+      tags: [Company Addresses]
+      summary: Query company addresses (paginated)
+      operationId: queryCompanyAddresses
+      parameters:
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/size'
+        - $ref: '#/components/parameters/sort'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompanyAddressQueryRequest'
+      responses:
+        '200':
+          description: Paginated list of company addresses
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageCompanyAddressResponse'
+
+  /integration/company-addresses/{id}:
+    get:
+      tags: [Company Addresses]
+      summary: Get company address by ID
+      operationId: getCompanyAddress
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Company address details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyAddressResponse'
+
+  # ──────────────────────────── COUNTRIES ────────────────────────────
+
+  /integration/countries:
+    get:
+      tags: [Countries]
+      summary: List supported countries
+      operationId: getCountries
+      deprecated: true
+      description: Deprecated. Use POST /integration/countries/query instead.
+      responses:
+        '200':
+          description: List of countries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CountryResponse'
+
+  /integration/countries/query:
+    post:
+      tags: [Countries]
+      summary: Query countries by support type
+      operationId: queryCountries
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CountryQueryRequest'
+      responses:
+        '200':
+          description: List of matching countries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CountryResponse'
+
+  # ──────────────────────────── TAGS ────────────────────────────
+
+  /integration/tags:
+    get:
+      tags: [Tags]
+      summary: List tags
+      operationId: getTags
+      responses:
+        '200':
+          description: List of tags
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TagResponse'
+
+# ══════════════════════════════════════════════════════════════════
+# COMPONENTS
+# ══════════════════════════════════════════════════════════════════
+components:
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    page:
+      name: page
+      in: query
+      description: Zero-based page index
+      schema:
+        type: integer
+        default: 0
+    size:
+      name: size
+      in: query
+      description: Number of items per page
+      schema:
+        type: integer
+        default: 20
+    sort:
+      name: sort
+      in: query
+      description: "Sort criteria in format: field,asc|desc. Multiple values supported."
+      schema:
+        type: string
+
+  schemas:
+
+    # ── Primitives / shared value types ──────────────────────────
+
+    Money:
+      type: object
+      description: Monetary amount with currency
+      properties:
+        amount:
+          type: string
+          description: Decimal amount, e.g. "100.00"
+          example: "100.00"
+        currency:
+          type: string
+          description: ISO 4217 currency code
+          example: "EUR"
+
+    CountryResponse:
+      type: object
+      properties:
+        code:
+          type: string
+          description: ISO 3166-1 alpha-2 country code
+          example: "DE"
+        displayName:
+          type: string
+          example: "Germany"
+
+    # ── Enums ────────────────────────────────────────────────────
+
+    OrderState:
+      type: string
+      enum:
+        - ONBOARDING_SET
+        - PAYMENT_PENDING
+        - PAYMENT_FAILED
+        - RECEIVED
+        - PREPARING
+        - AWAITING_CTO_ORDER
+        - SENT
+        - DELIVERY_FAILED
+        - OUT_FOR_DELIVERY
+        - DECLINED
+        - DELIVERED
+        - ARCHIVED
+        - DELETED
+
+    OrderType:
+      type: string
+      enum:
+        - NEW_EMPLOYEE
+        - ASSIGN_EXISTING
+        - COMPANY
+        - ONBOARDING
+        - TEQUIPY_WAREHOUSE
+
+    DeliveryType:
+      type: string
+      enum:
+        - STANDARD
+        - EXPRESS
+
+    OrderDelayReason:
+      type: string
+      enum:
+        - AWAITING_STOCK
+        - CTO_BUILD_TIME
+        - COURIER_ISSUES
+        - REMOTE_DELIVERY_ADDRESS
+        - INCOMPLETE_ADDRESS
+        - HOLIDAY_PERIOD
+
+    UserState:
+      type: string
+      enum:
+        - CREATED
+        - ACTIVE
+        - ARCHIVED
+        - DELETED
+        - OFFBOARDING_IN_PROGRESS
+        - OFFBOARDED
+
+    UserRole:
+      type: string
+      enum:
+        - EMPLOYEE
+        - COMPANY_ADMIN
+        - TEQUIPY_ADMIN
+        - STORAGE
+        - INTERNAL_ADMIN
+        - API_CLIENT
+        - API_CLIENT_READONLY
+        - AI_AGENT
+
+    OffboardingState:
+      type: string
+      enum:
+        - SCHEDULED
+        - FIRST_EMAIL_SENT
+        - FIRST_REMINDER_SENT
+        - SECOND_REMINDER_SENT
+        - EMPLOYEE_NOT_RESPONDING
+        - MATERIALS_SENT
+        - PAUSED
+        - READY_FOR_DROPOFF
+        - READY_FOR_PICKUP
+        - DEVICE_IN_TRANSIT
+        - DEVICE_IN_TEQUIPY_WAREHOUSE
+        - PICKUP_FAILED
+        - DROPOFF_FAILED
+        - COMPLETED
+        - CANCELLED
+        - DELETED
+
+    EquipmentCollectionState:
+      type: string
+      enum:
+        - SCHEDULED
+        - FIRST_EMAIL_SENT
+        - FIRST_REMINDER_SENT
+        - SECOND_REMINDER_SENT
+        - EMPLOYEE_NOT_RESPONDING
+        - MATERIALS_SENT
+        - READY_FOR_DROPOFF
+        - READY_FOR_PICKUP
+        - DEVICE_IN_TRANSIT
+        - DEVICE_IN_TEQUIPY_WAREHOUSE
+        - PICKUP_FAILED
+        - DROPOFF_FAILED
+        - COMPLETED
+        - CANCELLED
+        - DELETED
+
+    EquipmentArchivisationType:
+      type: string
+      enum:
+        - ARCHIVED
+        - GIVEN_AWAY
+
+    CountrySupportType:
+      type: string
+      enum:
+        - OFFBOARDING
+        - SELLBACK
+        - WAREHOUSE
+        - PRICING
+        - ALL
+
+    CompanyAddressType:
+      type: string
+      enum:
+        - INTERNAL
+        - TEQUIPY
+
+    PaymentMethodType:
+      type: string
+      enum:
+        - CREDIT_LINE
+        - STRIPE
+
+    PaymentMethodSource:
+      type: string
+      enum:
+        - GB
+        - EU
+        - US
+
+    OffboardingEquipmentState:
+      type: string
+      enum:
+        - ACTIVE
+        - DELETED
+
+    OffboardingEquipmentAction:
+      type: string
+      enum:
+        - GIVE_AWAY
+        - RETURN
+
+    # ── Address types ─────────────────────────────────────────────
+
+    DeliveryAddressResponse:
+      type: object
+      properties:
+        fullName:
+          type: string
+        address:
+          type: string
+          deprecated: true
+        streetLine1:
+          type: string
+        streetLine2:
+          type: string
+        city:
+          type: string
+        postalCode:
+          type: string
+        phoneNumber:
+          type: string
+        country:
+          $ref: '#/components/schemas/CountryResponse'
+        countrySubdivisionCode:
+          type: string
+
+    DeliveryAddressRequest:
+      type: object
+      properties:
+        fullName:
+          type: string
+        streetLine1:
+          type: string
+        streetLine2:
+          type: string
+        postalCode:
+          type: string
+        city:
+          type: string
+        countryCode:
+          type: string
+          description: ISO 3166-1 alpha-2 country code
+        country:
+          type: string
+          deprecated: true
+          description: Deprecated. Use countryCode.
+        countrySubdivisionCode:
+          type: string
+        phoneNumber:
+          type: string
+
+    CompanyAddressResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        addressName:
+          type: string
+        streetLine1:
+          type: string
+        streetLine2:
+          type: string
+        postalCode:
+          type: string
+        city:
+          type: string
+        country:
+          $ref: '#/components/schemas/CountryResponse'
+        countrySubdivisionCode:
+          type: string
+        type:
+          type: string
+        contactPersonFullName:
+          type: string
+        contactPersonPhone:
+          type: string
+        contactPersonEmail:
+          type: string
+        supportedCountries:
+          type: array
+          items:
+            $ref: '#/components/schemas/CountryResponse'
+
+    CompanyAddressRequest:
+      type: object
+      properties:
+        addressName:
+          type: string
+        streetLine1:
+          type: string
+        streetLine2:
+          type: string
+        postalCode:
+          type: string
+        city:
+          type: string
+        countryCode:
+          type: string
+          description: ISO 3166-1 alpha-2 country code
+        countrySubdivisionCode:
+          type: string
+        supportedCountries:
+          type: array
+          items:
+            type: string
+            description: ISO 3166-1 alpha-2 country code
+        contactPersonFullName:
+          type: string
+        contactPersonPhone:
+          type: string
+        contactPersonEmail:
+          type: string
+        orderSupported:
+          type: boolean
+
+    CompanyAddressQueryRequest:
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/CompanyAddressType'
+        searchPhrase:
+          type: string
+        withEquipment:
+          type: boolean
+          default: false
+
+    PickUpDetailsRequest:
+      type: object
+      description: Contact and address details for equipment pickup/dropoff
+      properties:
+        privateEmail:
+          type: string
+        phoneNumber:
+          type: string
+        fullName:
+          type: string
+        city:
+          type: string
+        postalCode:
+          type: string
+        country:
+          type: string
+          deprecated: true
+          description: Deprecated. Use countryCode.
+        countryCode:
+          type: string
+          description: ISO 3166-1 alpha-2 country code
+        countrySubdivisionCode:
+          type: string
+        streetLine1:
+          type: string
+        streetLine2:
+          type: string
+
+    # ── Company ───────────────────────────────────────────────────
+
+    CompanyResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        currency:
+          type: string
+          description: ISO 4217 currency code
+        videoUrl:
+          type: string
+        country:
+          $ref: '#/components/schemas/CountryResponse'
+
+    CompanyEntityResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        legalName:
+          type: string
+        streetLine1:
+          type: string
+        streetLine2:
+          type: string
+        postalCode:
+          type: string
+        city:
+          type: string
+        invoicingEmail:
+          type: string
+        country:
+          $ref: '#/components/schemas/CountryResponse'
+        countrySubdivisionCode:
+          type: string
+        currency:
+          type: string
+          description: ISO 4217 currency code
+        vatId:
+          type: string
+        vies:
+          type: boolean
+
+    # ── Tags ─────────────────────────────────────────────────────
+
+    TagResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        equipmentsSize:
+          type: integer
+        employeesSize:
+          type: integer
+        updatedAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+
+    CountryQueryRequest:
+      type: object
+      required: [type]
+      properties:
+        type:
+          $ref: '#/components/schemas/CountrySupportType'
+
+    # ── Users ─────────────────────────────────────────────────────
+
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        privateEmail:
+          type: string
+        startDate:
+          type: string
+          format: date
+        phone:
+          type: string
+        state:
+          $ref: '#/components/schemas/UserState'
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/TagResponse'
+        company:
+          $ref: '#/components/schemas/CompanyResponse'
+        firstName:
+          type: string
+        lastName:
+          type: string
+        fullName:
+          type: string
+        position:
+          type: string
+        role:
+          $ref: '#/components/schemas/UserRole'
+        address:
+          $ref: '#/components/schemas/DeliveryAddressResponse'
+        createdAt:
+          type: string
+          format: date-time
+
+    CreateEmployeeRequest:
+      type: object
+      properties:
+        fullName:
+          type: string
+        position:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        startDate:
+          type: string
+          format: date
+        equipmentIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        role:
+          $ref: '#/components/schemas/UserRole'
+        tags:
+          type: array
+          items:
+            type: string
+            format: uuid
+        privateEmail:
+          type: string
+        address:
+          $ref: '#/components/schemas/DeliveryAddressRequest'
+
+    UpdateUserRequest:
+      type: object
+      properties:
+        fullName:
+          type: string
+        position:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+            format: uuid
+        email:
+          type: string
+        privateEmail:
+          type: string
+        phone:
+          type: string
+        role:
+          $ref: '#/components/schemas/UserRole'
+        address:
+          $ref: '#/components/schemas/DeliveryAddressRequest'
+
+    ArchiveUserRequest:
+      type: object
+      properties:
+        equipmentArchivizationType:
+          $ref: '#/components/schemas/EquipmentArchivisationType'
+
+    UsersQueryApiRequest:
+      type: object
+      properties:
+        searchPhrase:
+          type: string
+        states:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserState'
+        roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserRole'
+
+    # ── Equipment ────────────────────────────────────────────────
+
+    EquipmentResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        specification:
+          type: array
+          items:
+            type: object
+            additionalProperties:
+              type: string
+        imageUrl:
+          type: string
+        type:
+          type: string
+          description: Equipment type (e.g. LAPTOP, MONITOR, PHONE)
+        subtype:
+          type: string
+          description: Equipment sub-type
+        manufacturer:
+          type: string
+        sku:
+          type: string
+        ean:
+          type: string
+        price:
+          $ref: '#/components/schemas/Money'
+        createdAt:
+          type: string
+          format: date-time
+        countries:
+          type: array
+          items:
+            $ref: '#/components/schemas/CountryResponse'
+
+    EquipmentQueryRequest:
+      type: object
+      properties:
+        equipmentIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        type:
+          type: string
+          description: Equipment type filter
+        subType:
+          type: string
+          description: Equipment sub-type filter
+        tagId:
+          type: string
+          format: uuid
+        employeeOnboarding:
+          type: boolean
+          default: false
+        countryCode:
+          type: string
+          description: ISO 3166-1 alpha-2 country code
+        searchPhrase:
+          type: string
+        currency:
+          type: string
+          description: ISO 4217 currency code
+
+    UserEquipmentResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        serialNumber:
+          type: string
+        equipment:
+          $ref: '#/components/schemas/EquipmentResponse'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        user:
+          $ref: '#/components/schemas/UserResponse'
+        storage:
+          $ref: '#/components/schemas/CompanyAddressResponse'
+        price:
+          $ref: '#/components/schemas/Money'
+        state:
+          type: string
+          description: "User equipment state (e.g. ACTIVE, IN_TRANSIT, STORAGE, ARCHIVED)"
+        isNew:
+          type: boolean
+
+    CreateUserEquipmentRequest:
+      type: object
+      properties:
+        serialNumber:
+          type: string
+        name:
+          type: string
+        specification:
+          type: array
+          items:
+            type: object
+            additionalProperties:
+              type: string
+        companyAddress:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+        user:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+        type:
+          type: string
+          description: Equipment sub-type
+        isNew:
+          type: boolean
+
+    UpdateUserEquipmentRequest:
+      type: object
+      properties:
+        serialNumber:
+          type: string
+        companyAddressId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        isNew:
+          type: boolean
+
+    UserEquipmentQueryRequest:
+      type: object
+      properties:
+        userEquipmentIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        types:
+          type: array
+          items:
+            type: string
+            description: Equipment type
+        subTypes:
+          type: array
+          items:
+            type: string
+            description: Equipment sub-type
+        searchPhrase:
+          type: string
+        states:
+          type: array
+          items:
+            type: string
+            description: User equipment state
+        companyAddressIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        sourceType:
+          type: string
+          description: "Source type: STORAGE or EMPLOYEE"
+          default: STORAGE
+        updatedFrom:
+          type: string
+          format: date
+        updatedTo:
+          type: string
+          format: date
+        storageLocationCountryCode:
+          type: string
+          description: ISO 3166-1 alpha-2 country code
+        currency:
+          type: string
+          description: ISO 4217 currency code
+        isNew:
+          type: boolean
+
+    # ── Orders ───────────────────────────────────────────────────
+
+    OrderEquipmentRequest:
+      type: object
+      required: [id, size]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Equipment catalog ID
+        size:
+          type: integer
+          description: Quantity
+        keyboardLayoutId:
+          type: string
+          format: uuid
+        equipmentWarrantyId:
+          type: string
+          format: uuid
+
+    OrderEquipmentResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        equipment:
+          $ref: '#/components/schemas/EquipmentResponse'
+        size:
+          type: integer
+        itemPrice:
+          $ref: '#/components/schemas/Money'
+        type:
+          type: string
+        userEquipmentId:
+          type: string
+          format: uuid
+          deprecated: true
+        serialNumbers:
+          type: array
+          items:
+            type: string
+        userEquipments:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserEquipmentResponse'
+        updatedAt:
+          type: string
+          format: date-time
+
+    PaymentMethodDto:
+      type: object
+      properties:
+        method:
+          $ref: '#/components/schemas/PaymentMethodType'
+        source:
+          $ref: '#/components/schemas/PaymentMethodSource'
+
+    PaymentDetailsResponse:
+      type: object
+      properties:
+        details:
+          type: object
+          description: Bank account details
+          properties:
+            iban:
+              type: string
+            bic:
+              type: string
+            accountNumber:
+              type: string
+            sortCode:
+              type: string
+        title:
+          type: string
+        receiver:
+          type: object
+          properties:
+            name:
+              type: string
+            streetLine1:
+              type: string
+            city:
+              type: string
+            postalCode:
+              type: string
+            country:
+              $ref: '#/components/schemas/CountryResponse'
+            countrySubdivisionCode:
+              type: string
+        currency:
+          type: string
+          description: ISO 4217 currency code
+
+    CreateOrderRequest:
+      type: object
+      properties:
+        equipment:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderEquipmentRequest'
+        orderType:
+          $ref: '#/components/schemas/OrderType'
+        startDate:
+          type: string
+          format: date
+        deliveryAddress:
+          $ref: '#/components/schemas/DeliveryAddressRequest'
+        employeeId:
+          type: string
+          format: uuid
+          description: Existing employee ID. Mutually exclusive with employee.
+        employeeEmail:
+          type: string
+          deprecated: true
+        employee:
+          $ref: '#/components/schemas/CreateEmployeeRequest'
+          description: Create a new employee inline. Mutually exclusive with employeeId.
+        contactPersonFullName:
+          type: string
+        contactPersonPhone:
+          type: string
+        contactPersonEmail:
+          type: string
+        companyEntityName:
+          type: string
+        companyEntityId:
+          type: string
+          format: uuid
+        notes:
+          type: string
+        purchaseOrderNumber:
+          type: string
+        paymentMethod:
+          $ref: '#/components/schemas/PaymentMethodDto'
+        deliveryType:
+          $ref: '#/components/schemas/DeliveryType'
+        companyAddressId:
+          type: string
+          format: uuid
+          description: Existing company address ID. Mutually exclusive with companyAddress.
+        companyAddress:
+          $ref: '#/components/schemas/CompanyAddressRequest'
+          description: Create a new company address inline. Mutually exclusive with companyAddressId.
+
+    OrderQueryRequest:
+      type: object
+      properties:
+        orderedForIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: Filter by user or company address IDs
+        countries:
+          type: array
+          items:
+            type: string
+        createdFrom:
+          type: string
+          format: date
+        states:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderState'
+        searchPhrase:
+          type: string
+        ids:
+          type: array
+          items:
+            type: string
+        companyAddressIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        orderedForType:
+          type: string
+          enum: [EMPLOYEE, COMPANY_ADDRESS, TEQUIPY_WAREHOUSE]
+
+    OrderResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        orderEquipment:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderEquipmentResponse'
+        state:
+          $ref: '#/components/schemas/OrderState'
+        type:
+          $ref: '#/components/schemas/OrderType'
+        deliveryNumber:
+          type: string
+        deliveryUrl:
+          type: string
+        deliveryCompany:
+          type: string
+        deliveryCountry:
+          type: string
+        deliveryCountryCode:
+          type: string
+        deliveryFullName:
+          type: string
+        deliveryType:
+          $ref: '#/components/schemas/DeliveryType'
+        company:
+          type: object
+          description: Order company summary
+          properties:
+            id:
+              type: string
+              format: uuid
+            name:
+              type: string
+        user:
+          $ref: '#/components/schemas/UserResponse'
+        deliveryAddress:
+          $ref: '#/components/schemas/DeliveryAddressResponse'
+        delayed:
+          type: boolean
+        delayReason:
+          $ref: '#/components/schemas/OrderDelayReason'
+        deliveryFailureReason:
+          type: string
+        contactPersonFullName:
+          type: string
+        contactPersonEmail:
+          type: string
+        contactPersonPhone:
+          type: string
+        companyEntityName:
+          type: string
+        createdDate:
+          type: string
+          format: date-time
+        startDate:
+          type: string
+          format: date
+        completedDate:
+          type: string
+          format: date-time
+        cancelledAt:
+          type: string
+          format: date-time
+        sentAt:
+          type: string
+          format: date-time
+        outForDeliveryAt:
+          type: string
+          format: date-time
+        deliveryFailedAt:
+          type: string
+          format: date-time
+        totalPrice:
+          $ref: '#/components/schemas/Money'
+        invoicePaid:
+          type: boolean
+        invoiceAmount:
+          type: number
+          deprecated: true
+        invoiceSent:
+          type: boolean
+        notes:
+          type: string
+        purchaseOrderNumber:
+          type: string
+        paymentDetails:
+          $ref: '#/components/schemas/PaymentDetailsResponse'
+        paymentMethod:
+          $ref: '#/components/schemas/PaymentMethodDto'
+        companyAddress:
+          $ref: '#/components/schemas/CompanyAddressResponse'
+
+    # ── Offboardings ─────────────────────────────────────────────
+
+    CreateOffboardingRequest:
+      type: object
+      properties:
+        userId:
+          type: string
+          format: uuid
+        offboardingEquipmentIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        givenEquipmentIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        lastWorkingDayAt:
+          type: string
+          format: date-time
+        pickUpDetails:
+          $ref: '#/components/schemas/PickUpDetailsRequest'
+        notes:
+          type: string
+        isChargerReplacementAllowed:
+          type: boolean
+        firstContactAt:
+          type: string
+          format: date-time
+
+    OffboardingQueryRequest:
+      type: object
+      properties:
+        searchPhrase:
+          type: string
+        states:
+          type: array
+          items:
+            $ref: '#/components/schemas/OffboardingState'
+        createdAt:
+          type: string
+          format: date
+        lastWorkingDay:
+          type: string
+          format: date
+
+    OffboardingEquipmentResponse:
+      type: object
+      properties:
+        serialNumber:
+          type: string
+        userEquipmentId:
+          type: string
+          format: uuid
+        equipment:
+          $ref: '#/components/schemas/EquipmentResponse'
+        createdAt:
+          type: string
+          format: date-time
+        state:
+          $ref: '#/components/schemas/OffboardingEquipmentState'
+        updatedAt:
+          type: string
+          format: date-time
+        action:
+          $ref: '#/components/schemas/OffboardingEquipmentAction'
+
+    OffboardingResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        contactEmail:
+          type: string
+        user:
+          $ref: '#/components/schemas/UserResponse'
+        companyAddress:
+          $ref: '#/components/schemas/CompanyAddressResponse'
+        deliveryAddress:
+          $ref: '#/components/schemas/DeliveryAddressResponse'
+        lastWorkingDayAt:
+          type: string
+          format: date-time
+        state:
+          $ref: '#/components/schemas/OffboardingState'
+        offboardingEquipments:
+          type: array
+          items:
+            $ref: '#/components/schemas/OffboardingEquipmentResponse'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        firstEmailSentAt:
+          type: string
+          format: date-time
+        firstReminderSentAt:
+          type: string
+          format: date-time
+        secondReminderSentAt:
+          type: string
+          format: date-time
+        employeeNotRespondingAt:
+          type: string
+          format: date-time
+        materialsSentAt:
+          type: string
+          format: date-time
+        courierScheduledAt:
+          type: string
+          format: date-time
+        readyForPickupAt:
+          type: string
+          format: date-time
+        readyForDropoffAt:
+          type: string
+          format: date-time
+        deviceInTransitAt:
+          type: string
+          format: date-time
+        deviceInTequipyWarehouseAt:
+          type: string
+          format: date-time
+        failedAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+        estimatedCompletedAt:
+          type: string
+          format: date-time
+        cancelledAt:
+          type: string
+          format: date-time
+        firstContactAt:
+          type: string
+          format: date-time
+        notes:
+          type: string
+        price:
+          $ref: '#/components/schemas/Money'
+
+    # ── Collections ──────────────────────────────────────────────
+
+    EquipmentCollectionRequest:
+      type: object
+      properties:
+        userId:
+          type: string
+          format: uuid
+        companyAddressId:
+          type: string
+          format: uuid
+          description: Destination company address ID
+        pickUpDetails:
+          $ref: '#/components/schemas/PickUpDetailsRequest'
+        collectionEquipmentIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: User-equipment IDs to collect
+        startAt:
+          type: string
+          format: date-time
+        notes:
+          type: string
+        isChargerReplacementAllowed:
+          type: boolean
+
+    EquipmentCollectionQueryRequest:
+      type: object
+      properties:
+        searchPhrase:
+          type: string
+        states:
+          type: array
+          items:
+            $ref: '#/components/schemas/EquipmentCollectionState'
+        userIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        companyAddressIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        createdAt:
+          type: string
+          format: date
+
+    EquipmentCollectionResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        contactEmail:
+          type: string
+        user:
+          $ref: '#/components/schemas/UserResponse'
+        companyAddress:
+          $ref: '#/components/schemas/CompanyAddressResponse'
+        deliveryAddress:
+          $ref: '#/components/schemas/DeliveryAddressResponse'
+        state:
+          $ref: '#/components/schemas/EquipmentCollectionState'
+        userEquipment:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserEquipmentResponse'
+        price:
+          $ref: '#/components/schemas/Money'
+        notes:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        initiatedAt:
+          type: string
+          format: date-time
+        firstEmailSentAt:
+          type: string
+          format: date-time
+        firstReminderSentAt:
+          type: string
+          format: date-time
+        secondReminderSentAt:
+          type: string
+          format: date-time
+        employeeNotRespondingAt:
+          type: string
+          format: date-time
+        materialsSentAt:
+          type: string
+          format: date-time
+        courierScheduledAt:
+          type: string
+          format: date-time
+        readyForPickupAt:
+          type: string
+          format: date-time
+        readyForDropoffAt:
+          type: string
+          format: date-time
+        pickedUpAt:
+          type: string
+          format: date-time
+        deviceInTransitAt:
+          type: string
+          format: date-time
+        deviceInTequipyWarehouseAt:
+          type: string
+          format: date-time
+        failedAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+        estimatedCompletedAt:
+          type: string
+          format: date-time
+        dropOffAgreedAt:
+          type: string
+          format: date-time
+        cancelledAt:
+          type: string
+          format: date-time
+
+    # ── Redeployments ─────────────────────────────────────────────
+
+    CreateRedeploymentRequest:
+      type: object
+      properties:
+        storageEquipmentIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: User-equipment IDs from storage to redeploy
+        startDate:
+          type: string
+          format: date
+        deliveryAddress:
+          $ref: '#/components/schemas/DeliveryAddressRequest'
+        employeeId:
+          type: string
+          format: uuid
+          description: Existing employee ID. Mutually exclusive with employee.
+        employee:
+          $ref: '#/components/schemas/CreateEmployeeRequest'
+          description: Create a new employee inline. Mutually exclusive with employeeId.
+        contactPersonEmail:
+          type: string
+        companyEntityId:
+          type: string
+          format: uuid
+        notes:
+          type: string
+        companyAddressId:
+          type: string
+          format: uuid
+          description: Existing company address ID. Mutually exclusive with companyAddress.
+        companyAddress:
+          $ref: '#/components/schemas/CompanyAddressRequest'
+
+    EquipmentRedeploymentQueryRequest:
+      type: object
+      properties:
+        searchPhrase:
+          type: string
+        states:
+          type: array
+          items:
+            type: string
+            description: Redeployment state
+        userIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        companyAddressIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        createdAt:
+          type: string
+          format: date
+
+    EquipmentRedeploymentResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        user:
+          $ref: '#/components/schemas/UserResponse'
+        companyAddress:
+          $ref: '#/components/schemas/CompanyAddressResponse'
+        deliveryAddress:
+          $ref: '#/components/schemas/DeliveryAddressResponse'
+        contactPersonEmail:
+          type: string
+        startDate:
+          type: string
+          format: date
+        state:
+          type: string
+          description: Redeployment state
+        userEquipment:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserEquipmentResponse'
+        price:
+          $ref: '#/components/schemas/Money'
+        notes:
+          type: string
+        delayed:
+          type: boolean
+        delayReason:
+          type: string
+        deliveryFailureReason:
+          type: string
+        estimatedDeliveryDate:
+          type: string
+          format: date
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        startProcessingAt:
+          type: string
+          format: date-time
+        sentAt:
+          type: string
+          format: date-time
+        outForDeliveryAt:
+          type: string
+          format: date-time
+        deliveryFailedAt:
+          type: string
+          format: date-time
+        cancelledAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+
+    # ── Invoices ─────────────────────────────────────────────────
+
+    InvoiceQueryRequest:
+      type: object
+      properties:
+        invoiceTypes:
+          type: array
+          items:
+            type: string
+            description: "Invoice type (e.g. ORDER, SUBSCRIPTION, OFFBOARDING, COLLECTION, REDEPLOYMENT)"
+        invoiceStates:
+          type: array
+          items:
+            type: string
+            description: "Invoice state (e.g. CREATED, SENT, PAID, OVERDUE, CANCELLED)"
+        searchPhrase:
+          type: string
+        companyEntityIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        referenceIds:
+          type: array
+          items:
+            type: string
+        createdAtFrom:
+          type: string
+          format: date-time
+        createdAtTo:
+          type: string
+          format: date-time
+        paidDueAtFrom:
+          type: string
+          format: date-time
+        paidDueAtTo:
+          type: string
+          format: date-time
+
+    InvoiceResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        url:
+          type: string
+        filename:
+          type: string
+        documentType:
+          type: string
+          description: "Invoice document type (e.g. INVOICE, CREDIT_NOTE)"
+        invoiceRef:
+          type: string
+        companyEntity:
+          $ref: '#/components/schemas/CompanyEntityResponse'
+        type:
+          type: string
+          description: "Invoice type (e.g. ORDER, SUBSCRIPTION, OFFBOARDING)"
+        paymentDueAt:
+          type: string
+          format: date-time
+        grossPrice:
+          $ref: '#/components/schemas/Money'
+        netPrice:
+          $ref: '#/components/schemas/Money'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        state:
+          type: string
+          description: "Invoice state (e.g. CREATED, SENT, PAID, OVERDUE, CANCELLED)"
+        invoiceItems:
+          type: array
+          items:
+            type: object
+            description: Invoice line item
+            properties:
+              description:
+                type: string
+              quantity:
+                type: integer
+              unitPrice:
+                $ref: '#/components/schemas/Money'
+              totalPrice:
+                $ref: '#/components/schemas/Money'
+
+    # ── Paginated response wrappers ───────────────────────────────
+
+    PageMetadata:
+      type: object
+      properties:
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+        size:
+          type: integer
+        number:
+          type: integer
+          description: Zero-based current page index
+        first:
+          type: boolean
+        last:
+          type: boolean
+        empty:
+          type: boolean
+
+    PageOrderResponse:
+      allOf:
+        - $ref: '#/components/schemas/PageMetadata'
+        - type: object
+          properties:
+            content:
+              type: array
+              items:
+                $ref: '#/components/schemas/OrderResponse'
+
+    PageUserResponse:
+      allOf:
+        - $ref: '#/components/schemas/PageMetadata'
+        - type: object
+          properties:
+            content:
+              type: array
+              items:
+                $ref: '#/components/schemas/UserResponse'
+
+    PageUserEquipmentResponse:
+      allOf:
+        - $ref: '#/components/schemas/PageMetadata'
+        - type: object
+          properties:
+            content:
+              type: array
+              items:
+                $ref: '#/components/schemas/UserEquipmentResponse'
+
+    PageOffboardingResponse:
+      allOf:
+        - $ref: '#/components/schemas/PageMetadata'
+        - type: object
+          properties:
+            content:
+              type: array
+              items:
+                $ref: '#/components/schemas/OffboardingResponse'
+
+    PageEquipmentCollectionResponse:
+      allOf:
+        - $ref: '#/components/schemas/PageMetadata'
+        - type: object
+          properties:
+            content:
+              type: array
+              items:
+                $ref: '#/components/schemas/EquipmentCollectionResponse'
+
+    PageEquipmentRedeploymentResponse:
+      allOf:
+        - $ref: '#/components/schemas/PageMetadata'
+        - type: object
+          properties:
+            content:
+              type: array
+              items:
+                $ref: '#/components/schemas/EquipmentRedeploymentResponse'
+
+    PageInvoiceResponse:
+      allOf:
+        - $ref: '#/components/schemas/PageMetadata'
+        - type: object
+          properties:
+            content:
+              type: array
+              items:
+                $ref: '#/components/schemas/InvoiceResponse'
+
+    PageEquipmentResponse:
+      allOf:
+        - $ref: '#/components/schemas/PageMetadata'
+        - type: object
+          properties:
+            content:
+              type: array
+              items:
+                $ref: '#/components/schemas/EquipmentResponse'
+
+    PageCompanyEntityResponse:
+      allOf:
+        - $ref: '#/components/schemas/PageMetadata'
+        - type: object
+          properties:
+            content:
+              type: array
+              items:
+                $ref: '#/components/schemas/CompanyEntityResponse'
+
+    PageCompanyAddressResponse:
+      allOf:
+        - $ref: '#/components/schemas/PageMetadata'
+        - type: object
+          properties:
+            content:
+              type: array
+              items:
+                $ref: '#/components/schemas/CompanyAddressResponse'

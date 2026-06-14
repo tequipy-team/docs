@@ -1,0 +1,67 @@
+---
+title: "Authentication"
+description: "How to authenticate requests to the Tequipy Integration API."
+---
+
+The Tequipy API uses **Bearer authentication** with a JSON Web Token (JWT). Every
+request must include a valid token in the `Authorization` header.
+
+## Authorization header
+
+```http
+Authorization: Bearer <your-jwt-token>
+```
+
+<ParamField header="Authorization" type="string" required>
+  A Bearer JWT obtained via the Tequipy authentication flow.
+</ParamField>
+
+## Example request
+
+<CodeGroup>
+
+```bash cURL
+curl https://app.tequipy.com/api/integration/orders/query \
+  -H "Authorization: Bearer $TEQUIPY_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
+```python Python
+import requests
+
+resp = requests.post(
+    "https://app.tequipy.com/api/integration/orders/query",
+    headers={"Authorization": f"Bearer {token}"},
+    json={},
+)
+resp.raise_for_status()
+print(resp.json())
+```
+
+```javascript Node.js
+const resp = await fetch(
+  "https://app.tequipy.com/api/integration/orders/query",
+  {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({}),
+  }
+);
+const data = await resp.json();
+```
+
+</CodeGroup>
+
+## Notes
+
+<Warning>
+  Keep your token secret. Never commit it to source control or expose it in
+  client-side code. Store it in an environment variable or a secrets manager.
+</Warning>
+
+A request with a missing, malformed, or expired token returns `401 Unauthorized`.
+Obtain a new token through the Tequipy authentication flow when yours expires.
