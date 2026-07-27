@@ -37,6 +37,8 @@ paths:
         "200":
           description: OK
           content: {}
+      x-mint:
+        href: /api-reference/users/create-employee
   /integration/users/{id}/archive:
     post:
       tags:
@@ -61,6 +63,8 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/UserResponse"
+      x-mint:
+        href: /api-reference/users/archive-user
   /integration/users/query:
     post:
       tags:
@@ -105,6 +109,8 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/PageUserResponse"
+      x-mint:
+        href: /api-reference/users/query-users
   /integration/user-equipments/query:
     post:
       tags:
@@ -151,6 +157,8 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/PageUserEquipmentResponse"
+      x-mint:
+        href: /api-reference/user-equipment/query-user-equipments
   /integration/user-equipment:
     post:
       tags:
@@ -169,11 +177,13 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/UserEquipmentResponse"
+      x-mint:
+        href: /api-reference/user-equipment/create-user-equipment
   /integration/redeployments:
     post:
       tags:
       - Redeployments
-      operationId: createEquipmentRedeployment
+      operationId: createRedeployment
       requestBody:
         content:
           application/json:
@@ -187,11 +197,13 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/EquipmentRedeploymentResponse"
+      x-mint:
+        href: /api-reference/redeployments/create-redeployment
   /integration/redeployments/query:
     post:
       tags:
       - Redeployments
-      operationId: redeploymentsQuery
+      operationId: queryRedeployments
       parameters:
       - name: page
         in: query
@@ -232,11 +244,13 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/PageEquipmentRedeploymentResponse"
+      x-mint:
+        href: /api-reference/redeployments/query-redeployments
   /integration/orders:
     post:
       tags:
       - Orders
-      operationId: addOrder
+      operationId: createOrder
       requestBody:
         content:
           application/json:
@@ -250,11 +264,13 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/OrderResponse"
+      x-mint:
+        href: /api-reference/orders/create-order
   /integration/orders/query:
     post:
       tags:
       - Orders
-      operationId: ordersQuery
+      operationId: queryOrders
       parameters:
       - name: page
         in: query
@@ -295,6 +311,8 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/PageOrderResponse"
+      x-mint:
+        href: /api-reference/orders/query-orders
   /integration/offboardings:
     post:
       tags:
@@ -313,11 +331,13 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/OffboardingResponse"
+      x-mint:
+        href: /api-reference/offboardings/create-offboarding
   /integration/offboardings/{id}/cancel:
     post:
       tags:
       - Offboardings
-      operationId: cancel
+      operationId: cancelOffboarding
       parameters:
       - name: id
         in: path
@@ -331,6 +351,8 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/OffboardingResponse"
+      x-mint:
+        href: /api-reference/offboardings/cancel-offboarding
   /integration/offboardings/query:
     post:
       tags:
@@ -377,11 +399,13 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/PageOffboardingResponse"
+      x-mint:
+        href: /api-reference/offboardings/query-offboardings
   /integration/invoices/query:
     post:
       tags:
       - Invoices
-      operationId: invoicesQuery
+      operationId: queryInvoices
       parameters:
       - name: page
         in: query
@@ -422,11 +446,13 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/PageInvoiceResponse"
+      x-mint:
+        href: /api-reference/invoices/query-invoices
   /integration/equipments/query:
     post:
       tags:
       - Equipments
-      operationId: queryEquipment
+      operationId: queryEquipments
       parameters:
       - name: page
         in: query
@@ -468,6 +494,8 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/PageEquipmentResponse"
+      x-mint:
+        href: /api-reference/equipments/query-equipments
   /integration/countries/query:
     post:
       tags:
@@ -488,11 +516,13 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/CountryResponse"
+      x-mint:
+        href: /api-reference/countries/query-countries
   /integration/company-addresses/query:
     post:
       tags:
       - Company Addresses
-      operationId: queryAddresses
+      operationId: queryCompanyAddresses
       parameters:
       - name: page
         in: query
@@ -532,11 +562,13 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/PageCompanyAddressResponse"
+      x-mint:
+        href: /api-reference/company-addresses/query-company-addresses
   /integration/collections:
     post:
       tags:
       - Collections
-      operationId: createEquipmentCollection
+      operationId: createCollection
       requestBody:
         content:
           application/json:
@@ -550,11 +582,13 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/EquipmentCollectionResponse"
+      x-mint:
+        href: /api-reference/collections/create-collection
   /integration/collections/{id}/cancel:
     post:
       tags:
       - Collections
-      operationId: cancel_1
+      operationId: cancelCollection
       parameters:
       - name: id
         in: path
@@ -568,11 +602,13 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/EquipmentCollectionResponse"
+      x-mint:
+        href: /api-reference/collections/cancel-collection
   /integration/collections/query:
     post:
       tags:
       - Collections
-      operationId: queryEquipmentCollections
+      operationId: queryCollections
       parameters:
       - name: page
         in: query
@@ -614,6 +650,8 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/PageEquipmentCollectionResponse"
+      x-mint:
+        href: /api-reference/collections/query-collections
   /integration/users/{id}:
     get:
       tags:
@@ -633,6 +671,8 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/UserResponse"
+      x-mint:
+        href: /api-reference/users/get-user
     patch:
       tags:
       - Users
@@ -657,6 +697,8 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/UserResponse"
+      x-mint:
+        href: /api-reference/users/update-user
   /integration/user-equipment/{id}:
     get:
       tags:
@@ -676,10 +718,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/UserEquipmentResponse"
+      x-mint:
+        href: /api-reference/user-equipment/get-user-equipment
     patch:
       tags:
       - User Equipment
-      operationId: editEquipment
+      operationId: updateUserEquipment
       parameters:
       - name: id
         in: path
@@ -700,6 +744,8 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/UserEquipmentResponse"
+      x-mint:
+        href: /api-reference/user-equipment/update-user-equipment
   /integration/tags:
     get:
       tags:
@@ -714,6 +760,8 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/TagResponse"
+      x-mint:
+        href: /api-reference/tags/get-tags
   /integration/redeployments/{id}:
     get:
       tags:
@@ -732,6 +780,8 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/EquipmentRedeploymentResponse"
+      x-mint:
+        href: /api-reference/redeployments/get-redeployment
   /integration/orders/{id}:
     get:
       tags:
@@ -750,11 +800,13 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/OrderResponse"
+      x-mint:
+        href: /api-reference/orders/get-order
   /integration/offboardings/{id}:
     get:
       tags:
       - Offboardings
-      operationId: getById
+      operationId: getOffboarding
       parameters:
       - name: id
         in: path
@@ -768,6 +820,8 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/OffboardingResponse"
+      x-mint:
+        href: /api-reference/offboardings/get-offboarding
   /integration/invoices/{id}:
     get:
       tags:
@@ -787,6 +841,8 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/InvoiceResponse"
+      x-mint:
+        href: /api-reference/invoices/get-invoice
   /integration/countries:
     get:
       tags:
@@ -802,6 +858,8 @@ paths:
                 items:
                   $ref: "#/components/schemas/CountryResponse"
       deprecated: true
+      x-mint:
+        href: /api-reference/countries/get-countries
   /integration/company-entities:
     get:
       tags:
@@ -840,6 +898,8 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/PageCompanyEntityResponse"
+      x-mint:
+        href: /api-reference/company-entities/get-company-entities
   /integration/company-entities/{id}:
     get:
       tags:
@@ -859,11 +919,13 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/CompanyEntityResponse"
+      x-mint:
+        href: /api-reference/company-entities/get-company-entity
   /integration/company-addresses/{id}:
     get:
       tags:
       - Company Addresses
-      operationId: getAddress
+      operationId: getCompanyAddress
       parameters:
       - name: id
         in: path
@@ -878,11 +940,13 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/CompanyAddressResponse"
+      x-mint:
+        href: /api-reference/company-addresses/get-company-address
   /integration/collections/{id}:
     get:
       tags:
       - Collections
-      operationId: getById_1
+      operationId: getCollection
       parameters:
       - name: id
         in: path
@@ -896,6 +960,8 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/EquipmentCollectionResponse"
+      x-mint:
+        href: /api-reference/collections/get-collection
 components:
   schemas:
     CreateEmployeeRequest:
@@ -1821,11 +1887,11 @@ components:
           format: int64
         sort:
           $ref: "#/components/schemas/SortObject"
-        paged:
-          type: boolean
         pageNumber:
           type: integer
           format: int32
+        paged:
+          type: boolean
         pageSize:
           type: integer
           format: int32
