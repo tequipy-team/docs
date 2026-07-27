@@ -32,6 +32,8 @@ paths:
       tags: [Orders]
       summary: Create order
       operationId: createOrder
+      x-mint:
+        href: /api-reference/orders/create-order
       requestBody:
         required: true
         content:
@@ -51,6 +53,8 @@ paths:
       tags: [Orders]
       summary: Query orders (paginated)
       operationId: queryOrders
+      x-mint:
+        href: /api-reference/orders/query-orders
       parameters:
         - $ref: '#/components/parameters/page'
         - $ref: '#/components/parameters/size'
@@ -74,6 +78,8 @@ paths:
       tags: [Orders]
       summary: Get order by ID
       operationId: getOrder
+      x-mint:
+        href: /api-reference/orders/get-order
       parameters:
         - name: id
           in: path
@@ -95,6 +101,8 @@ paths:
       tags: [Users]
       summary: Create employee
       operationId: createEmployee
+      x-mint:
+        href: /api-reference/users/create-employee
       requestBody:
         required: true
         content:
@@ -114,6 +122,8 @@ paths:
       tags: [Users]
       summary: Query users (paginated)
       operationId: queryUsers
+      x-mint:
+        href: /api-reference/users/query-users
       parameters:
         - $ref: '#/components/parameters/page'
         - $ref: '#/components/parameters/size'
@@ -137,6 +147,8 @@ paths:
       tags: [Users]
       summary: Get user by ID
       operationId: getUser
+      x-mint:
+        href: /api-reference/users/get-user
       parameters:
         - name: id
           in: path
@@ -155,6 +167,8 @@ paths:
       tags: [Users]
       summary: Update user
       operationId: updateUser
+      x-mint:
+        href: /api-reference/users/update-user
       parameters:
         - name: id
           in: path
@@ -181,6 +195,8 @@ paths:
       tags: [Users]
       summary: Archive user
       operationId: archiveUser
+      x-mint:
+        href: /api-reference/users/archive-user
       parameters:
         - name: id
           in: path
@@ -209,6 +225,8 @@ paths:
       tags: [User Equipment]
       summary: Create user-equipment assignment
       operationId: createUserEquipment
+      x-mint:
+        href: /api-reference/user-equipment/create-user-equipment
       requestBody:
         required: true
         content:
@@ -228,6 +246,8 @@ paths:
       tags: [User Equipment]
       summary: Get user-equipment by ID
       operationId: getUserEquipment
+      x-mint:
+        href: /api-reference/user-equipment/get-user-equipment
       parameters:
         - name: id
           in: path
@@ -246,6 +266,8 @@ paths:
       tags: [User Equipment]
       summary: Update user-equipment
       operationId: updateUserEquipment
+      x-mint:
+        href: /api-reference/user-equipment/update-user-equipment
       parameters:
         - name: id
           in: path
@@ -272,6 +294,8 @@ paths:
       tags: [User Equipment]
       summary: Query user-equipments (paginated)
       operationId: queryUserEquipments
+      x-mint:
+        href: /api-reference/user-equipment/query-user-equipments
       parameters:
         - $ref: '#/components/parameters/page'
         - $ref: '#/components/parameters/size'
@@ -297,6 +321,8 @@ paths:
       tags: [Offboardings]
       summary: Create offboarding
       operationId: createOffboarding
+      x-mint:
+        href: /api-reference/offboardings/create-offboarding
       requestBody:
         required: true
         content:
@@ -316,6 +342,8 @@ paths:
       tags: [Offboardings]
       summary: Query offboardings (paginated)
       operationId: queryOffboardings
+      x-mint:
+        href: /api-reference/offboardings/query-offboardings
       parameters:
         - $ref: '#/components/parameters/page'
         - $ref: '#/components/parameters/size'
@@ -339,6 +367,8 @@ paths:
       tags: [Offboardings]
       summary: Get offboarding by ID
       operationId: getOffboarding
+      x-mint:
+        href: /api-reference/offboardings/get-offboarding
       parameters:
         - name: id
           in: path
@@ -358,6 +388,8 @@ paths:
       tags: [Offboardings]
       summary: Cancel offboarding
       operationId: cancelOffboarding
+      x-mint:
+        href: /api-reference/offboardings/cancel-offboarding
       parameters:
         - name: id
           in: path
@@ -379,6 +411,8 @@ paths:
       tags: [Collections]
       summary: Create equipment collection
       operationId: createCollection
+      x-mint:
+        href: /api-reference/collections/create-collection
       requestBody:
         required: true
         content:
@@ -398,6 +432,8 @@ paths:
       tags: [Collections]
       summary: Query collections (paginated)
       operationId: queryCollections
+      x-mint:
+        href: /api-reference/collections/query-collections
       parameters:
         - $ref: '#/components/parameters/page'
         - $ref: '#/components/parameters/size'
@@ -421,6 +457,8 @@ paths:
       tags: [Collections]
       summary: Get collection by ID
       operationId: getCollection
+      x-mint:
+        href: /api-reference/collections/get-collection
       parameters:
         - name: id
           in: path
@@ -440,6 +478,8 @@ paths:
       tags: [Collections]
       summary: Cancel collection
       operationId: cancelCollection
+      x-mint:
+        href: /api-reference/collections/cancel-collection
       parameters:
         - name: id
           in: path
@@ -461,6 +501,8 @@ paths:
       tags: [Redeployments]
       summary: Create equipment redeployment
       operationId: createRedeployment
+      x-mint:
+        href: /api-reference/redeployments/create-redeployment
       requestBody:
         required: true
         content:
@@ -480,6 +522,8 @@ paths:
       tags: [Redeployments]
       summary: Query redeployments (paginated)
       operationId: queryRedeployments
+      x-mint:
+        href: /api-reference/redeployments/query-redeployments
       parameters:
         - $ref: '#/components/parameters/page'
         - $ref: '#/components/parameters/size'
@@ -503,6 +547,8 @@ paths:
       tags: [Redeployments]
       summary: Get redeployment by ID
       operationId: getRedeployment
+      x-mint:
+        href: /api-reference/redeployments/get-redeployment
       parameters:
         - name: id
           in: path
@@ -524,6 +570,8 @@ paths:
       tags: [Invoices]
       summary: Query invoices (paginated)
       operationId: queryInvoices
+      x-mint:
+        href: /api-reference/invoices/query-invoices
       parameters:
         - $ref: '#/components/parameters/page'
         - $ref: '#/components/parameters/size'
@@ -547,6 +595,8 @@ paths:
       tags: [Invoices]
       summary: Get invoice by ID
       operationId: getInvoice
+      x-mint:
+        href: /api-reference/invoices/get-invoice
       parameters:
         - name: id
           in: path
@@ -569,6 +619,8 @@ paths:
       tags: [Equipments]
       summary: Query equipments (paginated)
       operationId: queryEquipments
+      x-mint:
+        href: /api-reference/equipments/query-equipments
       parameters:
         - $ref: '#/components/parameters/page'
         - $ref: '#/components/parameters/size'
@@ -594,6 +646,8 @@ paths:
       tags: [Company Entities]
       summary: List company entities (paginated)
       operationId: getCompanyEntities
+      x-mint:
+        href: /api-reference/company-entities/get-company-entities
       parameters:
         - $ref: '#/components/parameters/page'
         - $ref: '#/components/parameters/size'
@@ -611,6 +665,8 @@ paths:
       tags: [Company Entities]
       summary: Get company entity by ID
       operationId: getCompanyEntity
+      x-mint:
+        href: /api-reference/company-entities/get-company-entity
       parameters:
         - name: id
           in: path
@@ -633,6 +689,8 @@ paths:
       tags: [Company Addresses]
       summary: Query company addresses (paginated)
       operationId: queryCompanyAddresses
+      x-mint:
+        href: /api-reference/company-addresses/query-company-addresses
       parameters:
         - $ref: '#/components/parameters/page'
         - $ref: '#/components/parameters/size'
@@ -656,6 +714,8 @@ paths:
       tags: [Company Addresses]
       summary: Get company address by ID
       operationId: getCompanyAddress
+      x-mint:
+        href: /api-reference/company-addresses/get-company-address
       parameters:
         - name: id
           in: path
@@ -678,6 +738,8 @@ paths:
       tags: [Countries]
       summary: List supported countries
       operationId: getCountries
+      x-mint:
+        href: /api-reference/countries/get-countries
       deprecated: true
       description: Deprecated. Use POST /integration/countries/query instead.
       responses:
@@ -695,6 +757,8 @@ paths:
       tags: [Countries]
       summary: Query countries by support type
       operationId: queryCountries
+      x-mint:
+        href: /api-reference/countries/query-countries
       requestBody:
         required: true
         content:
@@ -718,6 +782,8 @@ paths:
       tags: [Tags]
       summary: List tags
       operationId: getTags
+      x-mint:
+        href: /api-reference/tags/get-tags
       responses:
         '200':
           description: List of tags
