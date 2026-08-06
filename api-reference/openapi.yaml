@@ -14,6 +14,7 @@ tags:
 - name: User Equipment
 - name: Offboardings
 - name: Collections
+- name: Repairs
 - name: Redeployments
 - name: Invoices
 - name: Equipments
@@ -179,6 +180,144 @@ paths:
                 $ref: "#/components/schemas/UserEquipmentResponse"
       x-mint:
         href: /api-reference/user-equipment/create-user-equipment
+  /integration/repairs:
+    post:
+      tags:
+      - Repairs
+      operationId: createRepair
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateEquipmentRepairRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/EquipmentRepairResponse"
+      x-mint:
+        href: /api-reference/repairs/create-repair
+  /integration/repairs/{id}/reject:
+    post:
+      tags:
+      - Repairs
+      operationId: rejectRepair
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EquipmentRepairDecisionRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/EquipmentRepairResponse"
+      x-mint:
+        href: /api-reference/repairs/reject-repair
+  /integration/repairs/{id}/cancel:
+    post:
+      tags:
+      - Repairs
+      operationId: cancelRepair
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/EquipmentRepairResponse"
+      x-mint:
+        href: /api-reference/repairs/cancel-repair
+  /integration/repairs/{id}/approve:
+    post:
+      tags:
+      - Repairs
+      operationId: approveRepair
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EquipmentRepairDecisionRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/EquipmentRepairResponse"
+      x-mint:
+        href: /api-reference/repairs/approve-repair
+  /integration/repairs/query:
+    post:
+      tags:
+      - Repairs
+      operationId: queryRepairs
+      parameters:
+      - name: page
+        in: query
+        description: Zero-based page index (0..N)
+        required: false
+        schema:
+          minimum: 0
+          type: integer
+          default: 0
+      - name: size
+        in: query
+        description: The size of the page to be returned
+        required: false
+        schema:
+          minimum: 1
+          type: integer
+          default: 10
+      - name: sort
+        in: query
+        description: "Sorting criteria in the format: property,(asc|desc). Default\
+          \ sort order is ascending. Multiple sort criteria are supported."
+        required: false
+        schema:
+          type: array
+          items:
+            type: string
+          default:
+          - "updatedAt,DESC"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EquipmentRepairQueryRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PageEquipmentRepairResponse"
+      x-mint:
+        href: /api-reference/repairs/query-repairs
   /integration/redeployments:
     post:
       tags:
@@ -762,6 +901,26 @@ paths:
                   $ref: "#/components/schemas/TagResponse"
       x-mint:
         href: /api-reference/tags/get-tags
+  /integration/repairs/{id}:
+    get:
+      tags:
+      - Repairs
+      operationId: getRepair
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/EquipmentRepairResponse"
+      x-mint:
+        href: /api-reference/repairs/get-repair
   /integration/redeployments/{id}:
     get:
       tags:
@@ -969,23 +1128,30 @@ components:
       properties:
         fullName:
           type: string
+          nullable: true
         position:
           type: string
+          nullable: true
         email:
           type: string
+          nullable: true
         phone:
           type: string
+          nullable: true
         startDate:
           type: string
           format: date
+          nullable: true
         equipmentIds:
           uniqueItems: true
           type: array
+          nullable: true
           items:
             type: string
             format: uuid
         role:
           type: string
+          nullable: true
           enum:
           - EMPLOYEE
           - COMPANY_ADMIN
@@ -998,48 +1164,73 @@ components:
         tags:
           uniqueItems: true
           type: array
+          nullable: true
           items:
             type: string
             format: uuid
         licences:
           uniqueItems: true
           type: array
+          nullable: true
           items:
             $ref: "#/components/schemas/CreateUserLicenceRequest"
         privateEmail:
           type: string
+          nullable: true
         address:
-          $ref: "#/components/schemas/DeliveryAddressRequest"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/DeliveryAddressRequest"
         sendToWorkEmail:
           type: boolean
+          nullable: true
     CreateUserLicenceRequest:
       type: object
       properties:
         name:
           type: string
+          nullable: true
         from:
           type: string
           format: date
+          nullable: true
         expirationDate:
           type: string
           format: date
+          nullable: true
         notes:
           type: string
+          nullable: true
     DeliveryAddressRequest:
       type: object
       properties:
         fullName:
           type: string
+          nullable: true
         streetLine1:
           type: string
+          nullable: true
         streetLine2:
           type: string
+          nullable: true
         postalCode:
           type: string
+          nullable: true
         city:
           type: string
+          nullable: true
+        country:
+          type: string
+          nullable: true
+        countrySubdivisionCode:
+          type: string
+          nullable: true
+        phoneNumber:
+          type: string
+          nullable: true
         countryCode:
           type: string
+          nullable: true
           enum:
           - UNDEFINED
           - AC
@@ -1313,35 +1504,20 @@ components:
           - ZM
           - ZR
           - ZW
-        country:
-          type: string
-        countrySubdivisionCode:
-          type: string
-        phoneNumber:
-          type: string
     EquipmentResponse:
-      required:
-      - id
-      - name
-      - type
       type: object
     Money:
       type: object
     TagResponse:
-      required:
-      - id
-      - name
       type: object
     UserResponse:
-      required:
-      - email
-      - id
       type: object
     ArchiveUserRequest:
       type: object
       properties:
         equipmentArchivizationType:
           type: string
+          nullable: true
           enum:
           - ARCHIVED
           - GIVEN_AWAY
@@ -1350,9 +1526,11 @@ components:
       properties:
         searchPhrase:
           type: string
+          nullable: true
         states:
           uniqueItems: true
           type: array
+          nullable: true
           items:
             type: string
             enum:
@@ -1365,6 +1543,7 @@ components:
         roles:
           uniqueItems: true
           type: array
+          nullable: true
           items:
             type: string
             enum:
@@ -1379,11 +1558,8 @@ components:
         companyId:
           type: string
           format: uuid
+          nullable: true
     CompanyAddressResponse:
-      required:
-      - country
-      - id
-      - type
       type: object
       properties:
         id:
@@ -1391,34 +1567,41 @@ components:
           format: uuid
         addressName:
           type: string
+          nullable: true
         streetLine1:
           type: string
+          nullable: true
         streetLine2:
           type: string
+          nullable: true
         postalCode:
           type: string
+          nullable: true
         city:
           type: string
+          nullable: true
         country:
           $ref: "#/components/schemas/CountryResponse"
         countrySubdivisionCode:
           type: string
+          nullable: true
         type:
           type: string
         contactPersonFullName:
           type: string
+          nullable: true
         contactPersonPhone:
           type: string
+          nullable: true
         contactPersonEmail:
           type: string
+          nullable: true
         supportedCountries:
           type: array
+          nullable: true
           items:
             $ref: "#/components/schemas/CountryResponse"
     CountryResponse:
-      required:
-      - code
-      - displayName
       type: object
       properties:
         code:
@@ -1430,90 +1613,128 @@ components:
       properties:
         fullName:
           type: string
+          nullable: true
         address:
           type: string
           description: Use streetLine1 and streetLine2 instead
+          nullable: true
           deprecated: true
         streetLine1:
           type: string
+          nullable: true
         streetLine2:
           type: string
+          nullable: true
         city:
           type: string
+          nullable: true
         postalCode:
           type: string
+          nullable: true
         phoneNumber:
           type: string
+          nullable: true
         country:
-          $ref: "#/components/schemas/CountryResponse"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/CountryResponse"
         countrySubdivisionCode:
           type: string
+          nullable: true
     EquipmentRepairResponse:
       type: object
       properties:
         id:
           type: string
+          nullable: true
         contactEmail:
           type: string
+          nullable: true
         requesterEmail:
           type: string
+          nullable: true
         deliveryAddress:
-          $ref: "#/components/schemas/DeliveryAddressResponse"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/DeliveryAddressResponse"
         reason:
           type: string
+          nullable: true
         description:
           type: string
+          nullable: true
         notes:
           type: string
+          nullable: true
         decisionComment:
           type: string
+          nullable: true
         diagnosis:
           type: string
+          nullable: true
         price:
-          $ref: "#/components/schemas/Money"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/Money"
         pricingSummary:
-          $ref: "#/components/schemas/PricingSummaryResponse"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/PricingSummaryResponse"
         createdAt:
           type: string
           format: date-time
+          nullable: true
         initiatedAt:
           type: string
           format: date-time
+          nullable: true
         scheduledAt:
           type: string
           format: date-time
+          nullable: true
         pickedUpAt:
           type: string
           format: date-time
+          nullable: true
         pickUpRejectedAt:
           type: string
           format: date-time
+          nullable: true
         deliveredAt:
           type: string
           format: date-time
+          nullable: true
         estimatedDeliveredAt:
           type: string
           format: date-time
+          nullable: true
         diagnosedAt:
           type: string
           format: date-time
+          nullable: true
         repairApprovedAt:
           type: string
           format: date-time
+          nullable: true
         repairRejectedAt:
           type: string
           format: date-time
+          nullable: true
         completedAt:
           type: string
           format: date-time
+          nullable: true
         dropOffAgreedAt:
           type: string
           format: date-time
+          nullable: true
         cancelledAt:
           type: string
           format: date-time
+          nullable: true
         state:
           type: string
+          nullable: true
           enum:
           - SET
           - INITIATED
@@ -1529,19 +1750,23 @@ components:
           - CANCELLED
           - DELETED
         userEquipment:
-          $ref: "#/components/schemas/UserEquipmentResponse"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/UserEquipmentResponse"
         user:
-          $ref: "#/components/schemas/UserResponse"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/UserResponse"
         companyAddress:
-          $ref: "#/components/schemas/CompanyAddressResponse"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/CompanyAddressResponse"
         images:
           type: array
+          nullable: true
           items:
             $ref: "#/components/schemas/UserEquipmentFileResponse"
     EquipmentWarrantyResponse:
-      required:
-      - id
-      - name
       type: object
       properties:
         id:
@@ -1553,15 +1778,14 @@ components:
           - APPLE_CARE
           - APPLE_CARE_PLUS
         price:
-          $ref: "#/components/schemas/Money"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/Money"
         startAt:
           type: string
           format: date-time
+          nullable: true
     KeyboardLayoutResponse:
-      required:
-      - countryCode
-      - id
-      - name
       type: object
       properties:
         id:
@@ -1856,6 +2080,8 @@ components:
         totalPages:
           type: integer
           format: int32
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
         first:
           type: boolean
         last:
@@ -1875,43 +2101,37 @@ components:
         numberOfElements:
           type: integer
           format: int32
-        pageable:
-          $ref: "#/components/schemas/PageableObject"
         empty:
           type: boolean
     PageableObject:
       type: object
       properties:
+        paged:
+          type: boolean
+        pageNumber:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
         offset:
           type: integer
           format: int64
         sort:
           $ref: "#/components/schemas/SortObject"
-        pageNumber:
-          type: integer
-          format: int32
-        paged:
-          type: boolean
-        pageSize:
-          type: integer
-          format: int32
         unpaged:
           type: boolean
     PricingItemResponse:
-      required:
-      - price
-      - type
       type: object
       properties:
         type:
           type: string
         price:
           $ref: "#/components/schemas/Money"
+        optional:
+          type: boolean
+          nullable: true
     PricingSummaryResponse:
-      required:
-      - items
-      - state
-      - totalPrice
       type: object
       properties:
         state:
@@ -1925,18 +2145,20 @@ components:
             $ref: "#/components/schemas/PricingItemResponse"
         totalPrice:
           $ref: "#/components/schemas/Money"
+        minTotalPrice:
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/Money"
     SortObject:
       type: object
       properties:
-        empty:
-          type: boolean
         sorted:
+          type: boolean
+        empty:
           type: boolean
         unsorted:
           type: boolean
     UserEquipmentDeviceEnrollmentResponse:
-      required:
-      - type
       type: object
       properties:
         type:
@@ -1947,12 +2169,10 @@ components:
           - WINDOWS_AUTOPILOT_AUTOMATIC
           - NONE
         windowsAutopilot:
-          $ref: "#/components/schemas/WindowsAutopilotResponse"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/WindowsAutopilotResponse"
     UserEquipmentFileResponse:
-      required:
-      - fileUrl
-      - id
-      - name
       type: object
       properties:
         id:
@@ -1968,31 +2188,36 @@ components:
         id:
           type: string
           format: uuid
+          nullable: true
         createdAt:
           type: string
           format: date-time
+          nullable: true
         text:
           type: string
+          nullable: true
         title:
           type: string
+          nullable: true
     UserEquipmentNoteResponse:
       type: object
       properties:
         id:
           type: string
           format: uuid
+          nullable: true
         text:
           type: string
+          nullable: true
         createdAt:
           type: string
           format: date-time
+          nullable: true
         updatedAt:
           type: string
           format: date-time
+          nullable: true
     UserEquipmentResponse:
-      required:
-      - id
-      - isNew
       type: object
       properties:
         id:
@@ -2000,41 +2225,62 @@ components:
           format: uuid
         serialNumber:
           type: string
+          nullable: true
         equipment:
-          $ref: "#/components/schemas/EquipmentResponse"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/EquipmentResponse"
         createdAt:
           type: string
           format: date-time
+          nullable: true
         user:
-          $ref: "#/components/schemas/UserResponse"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/UserResponse"
         history:
           type: array
+          nullable: true
           items:
             $ref: "#/components/schemas/UserEquipmentHistoryResponse"
         files:
           type: array
+          nullable: true
           items:
             $ref: "#/components/schemas/UserEquipmentFileResponse"
         notesList:
           type: array
+          nullable: true
           items:
             $ref: "#/components/schemas/UserEquipmentNoteResponse"
         repairs:
           type: array
+          nullable: true
           items:
             $ref: "#/components/schemas/EquipmentRepairResponse"
         storage:
-          $ref: "#/components/schemas/CompanyAddressResponse"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/CompanyAddressResponse"
         price:
-          $ref: "#/components/schemas/Money"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/Money"
         equipmentWarranty:
-          $ref: "#/components/schemas/EquipmentWarrantyResponse"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/EquipmentWarrantyResponse"
         keyboardLayout:
-          $ref: "#/components/schemas/KeyboardLayoutResponse"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/KeyboardLayoutResponse"
         deviceEnrollment:
-          $ref: "#/components/schemas/UserEquipmentDeviceEnrollmentResponse"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/UserEquipmentDeviceEnrollmentResponse"
         state:
           type: string
+          nullable: true
           enum:
           - ACTIVE
           - ARCHIVED
@@ -2046,44 +2292,51 @@ components:
         updatedAt:
           type: string
           format: date-time
-        isNew:
-          type: boolean
+          nullable: true
         abmAssignmentState:
           type: string
+          nullable: true
           enum:
           - ASSIGNED
           - NOT_ASSIGNED
           - UNKNOWN
+        new:
+          type: boolean
     WindowsAutopilotResponse:
       type: object
       properties:
         id:
           type: string
           format: uuid
+          nullable: true
         companyId:
           type: string
           format: uuid
+          nullable: true
         tenantId:
           type: string
+          nullable: true
         domain:
           type: string
+          nullable: true
         csvFileUrl:
           type: string
           format: uri
+          nullable: true
     UserEquipmentQueryRequest:
-      required:
-      - sourceType
       type: object
       properties:
         userEquipmentIds:
           uniqueItems: true
           type: array
+          nullable: true
           items:
             type: string
             format: uuid
         types:
           uniqueItems: true
           type: array
+          nullable: true
           items:
             type: string
             enum:
@@ -2093,6 +2346,7 @@ components:
         subTypes:
           uniqueItems: true
           type: array
+          nullable: true
           items:
             type: string
             enum:
@@ -2106,9 +2360,11 @@ components:
             - PHONE
         searchPhrase:
           type: string
+          nullable: true
         storageOwners:
           uniqueItems: true
           type: array
+          nullable: true
           items:
             type: string
             enum:
@@ -2117,6 +2373,7 @@ components:
         states:
           uniqueItems: true
           type: array
+          nullable: true
           items:
             type: string
             enum:
@@ -2130,6 +2387,7 @@ components:
         companyAddressIds:
           uniqueItems: true
           type: array
+          nullable: true
           items:
             type: string
             format: uuid
@@ -2141,11 +2399,14 @@ components:
         updatedFrom:
           type: string
           format: date
+          nullable: true
         updatedTo:
           type: string
           format: date
+          nullable: true
         storageLocationCountryCode:
           type: string
+          nullable: true
           enum:
           - UNDEFINED
           - AC
@@ -2437,15 +2698,17 @@ components:
             defaultFractionDigits:
               type: integer
               format: int32
-        isNew:
-          type: boolean
+          nullable: true
         abmState:
           type: string
+          nullable: true
           enum:
           - ASSIGNED
           - NOT_ASSIGNED
           - UNKNOWN
           - NON_APPLE
+        new:
+          type: boolean
     PageUserEquipmentResponse:
       type: object
       properties:
@@ -2455,6 +2718,8 @@ components:
         totalPages:
           type: integer
           format: int32
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
         first:
           type: boolean
         last:
@@ -2474,8 +2739,6 @@ components:
         numberOfElements:
           type: integer
           format: int32
-        pageable:
-          $ref: "#/components/schemas/PageableObject"
         empty:
           type: boolean
     CompanyAddressDto:
@@ -2484,18 +2747,25 @@ components:
         id:
           type: string
           format: uuid
+          nullable: true
         addressName:
           type: string
+          nullable: true
         streetLine1:
           type: string
+          nullable: true
         streetLine2:
           type: string
+          nullable: true
         postalCode:
           type: string
+          nullable: true
         city:
           type: string
+          nullable: true
         countryCode:
           type: string
+          nullable: true
           enum:
           - UNDEFINED
           - AC
@@ -2771,33 +3041,44 @@ components:
           - ZW
         countrySubdivisionCode:
           type: string
+          nullable: true
         contactPersonFullName:
           type: string
+          nullable: true
         contactPersonPhone:
           type: string
+          nullable: true
         contactPersonEmail:
           type: string
+          nullable: true
     CreateUserEquipmentRequest:
       type: object
       properties:
-        serialNumber:
-          type: string
         name:
           type: string
+          nullable: true
         specification:
           type: array
+          nullable: true
           items:
             type: object
             additionalProperties:
               type: string
         image:
-          $ref: "#/components/schemas/FileDto"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/FileDto"
         companyAddress:
-          $ref: "#/components/schemas/CompanyAddressDto"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/CompanyAddressDto"
         user:
-          $ref: "#/components/schemas/UserDto"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/UserDto"
         type:
           type: string
+          nullable: true
           enum:
           - MAIN_COMPUTER
           - SWAG
@@ -2810,56 +3091,502 @@ components:
         files:
           uniqueItems: true
           type: array
+          nullable: true
           items:
             $ref: "#/components/schemas/FileDto"
-        isNew:
+        serialNumber:
+          type: string
+          nullable: true
+        new:
           type: boolean
     FileDto:
       type: object
       properties:
         name:
           type: string
+          nullable: true
         size:
           type: number
+          nullable: true
         fileUrl:
           type: string
+          nullable: true
     UserDto:
       type: object
       properties:
         id:
           type: string
           format: uuid
+          nullable: true
         firstName:
           type: string
+          nullable: true
         lastName:
           type: string
+          nullable: true
         position:
           type: string
+          nullable: true
         email:
           type: string
+          nullable: true
         privateEmail:
           type: string
+          nullable: true
         phone:
           type: string
+          nullable: true
         startDate:
           type: string
           format: date
+          nullable: true
+    CreateEquipmentRepairRequest:
+      type: object
+      properties:
+        pickUpDetails:
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/PickUpDetailsRequest"
+        userEquipmentId:
+          type: string
+          format: uuid
+          nullable: true
+        reason:
+          type: string
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        images:
+          uniqueItems: true
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/FileDto"
+        requesterEmail:
+          type: string
+          nullable: true
+        startAt:
+          type: string
+          format: date-time
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        companyEntityId:
+          type: string
+          format: uuid
+          nullable: true
+    PickUpDetailsRequest:
+      type: object
+      properties:
+        privateEmail:
+          type: string
+          nullable: true
+        phoneNumber:
+          type: string
+          nullable: true
+        fullName:
+          type: string
+          nullable: true
+        city:
+          type: string
+          nullable: true
+        postalCode:
+          type: string
+          nullable: true
+        country:
+          type: string
+          description: use countryCode
+          nullable: true
+          deprecated: true
+        countrySubdivisionCode:
+          type: string
+          nullable: true
+        streetLine1:
+          type: string
+          nullable: true
+        streetLine2:
+          type: string
+          nullable: true
+        countryCode:
+          type: string
+          nullable: true
+          enum:
+          - UNDEFINED
+          - AC
+          - AD
+          - AE
+          - AF
+          - AG
+          - AI
+          - AL
+          - AM
+          - AN
+          - AO
+          - AQ
+          - AR
+          - AS
+          - AT
+          - AU
+          - AW
+          - AX
+          - AZ
+          - BA
+          - BB
+          - BD
+          - BE
+          - BF
+          - BG
+          - BH
+          - BI
+          - BJ
+          - BL
+          - BM
+          - BN
+          - BO
+          - BQ
+          - BR
+          - BS
+          - BT
+          - BU
+          - BV
+          - BW
+          - BY
+          - BZ
+          - CA
+          - CC
+          - CD
+          - CF
+          - CG
+          - CH
+          - CI
+          - CK
+          - CL
+          - CM
+          - CN
+          - CO
+          - CP
+          - CR
+          - CS
+          - CU
+          - CV
+          - CW
+          - CX
+          - CY
+          - CZ
+          - DE
+          - DG
+          - DJ
+          - DK
+          - DM
+          - DO
+          - DZ
+          - EA
+          - EC
+          - EE
+          - EG
+          - EH
+          - ER
+          - ES
+          - ET
+          - EU
+          - EZ
+          - FI
+          - FJ
+          - FK
+          - FM
+          - FO
+          - FR
+          - FX
+          - GA
+          - GB
+          - GD
+          - GE
+          - GF
+          - GG
+          - GH
+          - GI
+          - GL
+          - GM
+          - GN
+          - GP
+          - GQ
+          - GR
+          - GS
+          - GT
+          - GU
+          - GW
+          - GY
+          - HK
+          - HM
+          - HN
+          - HR
+          - HT
+          - HU
+          - IC
+          - ID
+          - IE
+          - IL
+          - IM
+          - IN
+          - IO
+          - IQ
+          - IR
+          - IS
+          - IT
+          - JE
+          - JM
+          - JO
+          - JP
+          - KE
+          - KG
+          - KH
+          - KI
+          - KM
+          - KN
+          - KP
+          - KR
+          - KW
+          - KY
+          - KZ
+          - LA
+          - LB
+          - LC
+          - LI
+          - LK
+          - LR
+          - LS
+          - LT
+          - LU
+          - LV
+          - LY
+          - MA
+          - MC
+          - MD
+          - ME
+          - MF
+          - MG
+          - MH
+          - MK
+          - ML
+          - MM
+          - MN
+          - MO
+          - MP
+          - MQ
+          - MR
+          - MS
+          - MT
+          - MU
+          - MV
+          - MW
+          - MX
+          - MY
+          - MZ
+          - NA
+          - NC
+          - NE
+          - NF
+          - NG
+          - NI
+          - NL
+          - "NO"
+          - NP
+          - NR
+          - NT
+          - NU
+          - NZ
+          - OM
+          - PA
+          - PE
+          - PF
+          - PG
+          - PH
+          - PK
+          - PL
+          - PM
+          - PN
+          - PR
+          - PS
+          - PT
+          - PW
+          - PY
+          - QA
+          - RE
+          - RO
+          - RS
+          - RU
+          - RW
+          - SA
+          - SB
+          - SC
+          - SD
+          - SE
+          - SF
+          - SG
+          - SH
+          - SI
+          - SJ
+          - SK
+          - SL
+          - SM
+          - SN
+          - SO
+          - SR
+          - SS
+          - ST
+          - SU
+          - SV
+          - SX
+          - SY
+          - SZ
+          - TA
+          - TC
+          - TD
+          - TF
+          - TG
+          - TH
+          - TJ
+          - TK
+          - TL
+          - TM
+          - TN
+          - TO
+          - TP
+          - TR
+          - TT
+          - TV
+          - TW
+          - TZ
+          - UA
+          - UG
+          - UK
+          - UM
+          - US
+          - UY
+          - UZ
+          - VA
+          - VC
+          - VE
+          - VG
+          - VI
+          - VN
+          - VU
+          - WF
+          - WS
+          - XI
+          - XU
+          - XK
+          - YE
+          - YT
+          - YU
+          - ZA
+          - ZM
+          - ZR
+          - ZW
+        address:
+          type: string
+          nullable: true
+    EquipmentRepairDecisionRequest:
+      type: object
+      properties:
+        decisionComment:
+          type: string
+          nullable: true
+    EquipmentRepairQueryRequest:
+      type: object
+      properties:
+        searchPhrase:
+          type: string
+          nullable: true
+        states:
+          uniqueItems: true
+          type: array
+          nullable: true
+          items:
+            type: string
+            enum:
+            - SET
+            - INITIATED
+            - DROP_OFF_AGREED
+            - SCHEDULED
+            - PICKED_UP
+            - PICK_UP_REJECTED
+            - DELIVERED
+            - DIAGNOSED
+            - REPAIR_REJECTED
+            - REPAIR_APPROVED
+            - COMPLETED
+            - CANCELLED
+            - DELETED
+        equipmentTypes:
+          uniqueItems: true
+          type: array
+          nullable: true
+          items:
+            type: string
+            enum:
+            - MAIN_COMPUTER
+            - ACCESSORY
+            - SWAG
+        createdFrom:
+          type: string
+          format: date
+          nullable: true
+        createdTo:
+          type: string
+          format: date
+          nullable: true
+    PageEquipmentRepairResponse:
+      type: object
+      properties:
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
+        first:
+          type: boolean
+        last:
+          type: boolean
+        size:
+          type: integer
+          format: int32
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/EquipmentRepairResponse"
+        number:
+          type: integer
+          format: int32
+        sort:
+          $ref: "#/components/schemas/SortObject"
+        numberOfElements:
+          type: integer
+          format: int32
+        empty:
+          type: boolean
     CompanyAddressRequest:
-      required:
-      - addressName
-      - countryCode
       type: object
       properties:
         addressName:
           type: string
         streetLine1:
           type: string
+          nullable: true
         streetLine2:
           type: string
+          nullable: true
         postalCode:
           type: string
+          nullable: true
         city:
           type: string
+          nullable: true
         countryCode:
           type: string
           enum:
@@ -3137,9 +3864,11 @@ components:
           - ZW
         countrySubdivisionCode:
           type: string
+          nullable: true
         supportedCountries:
           uniqueItems: true
           type: array
+          nullable: true
           items:
             type: string
             enum:
@@ -3417,12 +4146,16 @@ components:
             - ZW
         contactPersonFullName:
           type: string
+          nullable: true
         contactPersonPhone:
           type: string
+          nullable: true
         contactPersonEmail:
           type: string
+          nullable: true
         orderSupported:
           type: boolean
+          nullable: true
     CreateRedeploymentRequest:
       required:
       - deliveryAddress
@@ -3431,35 +4164,45 @@ components:
         storageEquipmentIds:
           uniqueItems: true
           type: array
+          nullable: true
           items:
             type: string
             format: uuid
         startDate:
           type: string
           format: date
+          nullable: true
         deliveryAddress:
-          $ref: "#/components/schemas/DeliveryAddressRequest"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/DeliveryAddressRequest"
         employeeId:
           type: string
           format: uuid
+          nullable: true
         employee:
-          $ref: "#/components/schemas/CreateEmployeeRequest"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/CreateEmployeeRequest"
         contactPersonEmail:
           type: string
+          nullable: true
         companyEntityId:
           type: string
           format: uuid
+          nullable: true
         notes:
           type: string
+          nullable: true
         companyAddressId:
           type: string
           format: uuid
+          nullable: true
         companyAddress:
-          $ref: "#/components/schemas/CompanyAddressRequest"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/CompanyAddressRequest"
     EquipmentDeliveryResponse:
-      required:
-      - id
-      - trackingType
       type: object
       properties:
         id:
@@ -3467,74 +4210,99 @@ components:
           format: uuid
         url:
           type: string
+          nullable: true
         number:
           type: string
+          nullable: true
         company:
           type: string
+          nullable: true
         notes:
           type: string
+          nullable: true
         trackingType:
           type: string
           enum:
           - WITHOUT_TRACKING
           - REGULAR
     EquipmentRedeploymentResponse:
-      required:
-      - delayed
       type: object
       properties:
         id:
           type: string
+          nullable: true
         user:
-          $ref: "#/components/schemas/UserResponse"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/UserResponse"
         companyAddress:
-          $ref: "#/components/schemas/CompanyAddressResponse"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/CompanyAddressResponse"
         deliveryAddress:
-          $ref: "#/components/schemas/DeliveryAddressResponse"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/DeliveryAddressResponse"
         equipmentDelivery:
-          $ref: "#/components/schemas/EquipmentDeliveryResponse"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/EquipmentDeliveryResponse"
         contactPersonEmail:
           type: string
+          nullable: true
         startDate:
           type: string
           format: date
+          nullable: true
         createdAt:
           type: string
           format: date-time
+          nullable: true
         updatedAt:
           type: string
           format: date-time
+          nullable: true
         startProcessingAt:
           type: string
           format: date-time
+          nullable: true
         sentAt:
           type: string
           format: date-time
+          nullable: true
         outForDeliveryAt:
           type: string
           format: date-time
+          nullable: true
         deliveryFailedAt:
           type: string
           format: date-time
+          nullable: true
         deliveryFailureReason:
           type: string
+          nullable: true
         cancelledAt:
           type: string
           format: date-time
+          nullable: true
         completedAt:
           type: string
           format: date-time
+          nullable: true
         estimatedDeliveryDate:
           type: string
           format: date
+          nullable: true
         estimatedDeliveryDateHistory:
           type: array
+          nullable: true
           items:
             $ref: "#/components/schemas/EventLogEstimatedDeliveryDateResponse"
         delayed:
           type: boolean
         delayReason:
           type: string
+          nullable: true
           enum:
           - COURIER_ISSUES
           - REMOTE_DELIVERY_ADDRESS
@@ -3542,12 +4310,16 @@ components:
           - HOLIDAY_PERIOD
         notes:
           type: string
+          nullable: true
         tequipyNotes:
           type: string
+          nullable: true
         tequipyEmployeeEmail:
           type: string
+          nullable: true
         state:
           type: string
+          nullable: true
           enum:
           - RECEIVED
           - PREPARING
@@ -3558,16 +4330,18 @@ components:
           - DELIVERED
         userEquipment:
           type: array
+          nullable: true
           items:
             $ref: "#/components/schemas/UserEquipmentResponse"
         price:
-          $ref: "#/components/schemas/Money"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/Money"
         pricingSummary:
-          $ref: "#/components/schemas/PricingSummaryResponse"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/PricingSummaryResponse"
     EventLogEstimatedDeliveryDateResponse:
-      required:
-      - createdAt
-      - source
       type: object
       properties:
         createdAt:
@@ -3576,6 +4350,7 @@ components:
         estimatedDeliveryDate:
           type: string
           format: date
+          nullable: true
         source:
           type: string
           enum:
@@ -3586,9 +4361,11 @@ components:
       properties:
         searchPhrase:
           type: string
+          nullable: true
         states:
           uniqueItems: true
           type: array
+          nullable: true
           items:
             type: string
             enum:
@@ -3602,6 +4379,7 @@ components:
         targetTypes:
           uniqueItems: true
           type: array
+          nullable: true
           items:
             type: string
             enum:
@@ -3610,21 +4388,25 @@ components:
         userIds:
           uniqueItems: true
           type: array
+          nullable: true
           items:
             type: string
             format: uuid
         companyAddressIds:
           uniqueItems: true
           type: array
+          nullable: true
           items:
             type: string
             format: uuid
         createdAt:
           type: string
           format: date
+          nullable: true
         companyId:
           type: string
           format: uuid
+          nullable: true
     PageEquipmentRedeploymentResponse:
       type: object
       properties:
@@ -3634,6 +4416,8 @@ components:
         totalPages:
           type: integer
           format: int32
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
         first:
           type: boolean
         last:
@@ -3653,18 +4437,12 @@ components:
         numberOfElements:
           type: integer
           format: int32
-        pageable:
-          $ref: "#/components/schemas/PageableObject"
         empty:
           type: boolean
     CreateOrderRequest:
       required:
       - companyEntityId
-      - depRequested
-      - equipment
       - orderType
-      - paymentMethodType
-      - windowsAutopilotRequested
       type: object
       properties:
         equipment:
@@ -3674,6 +4452,7 @@ components:
             $ref: "#/components/schemas/OrderEquipmentRequest"
         orderType:
           type: string
+          nullable: true
           enum:
           - NEW_EMPLOYEE
           - ASSIGN_EXISTING
@@ -3683,48 +4462,69 @@ components:
         startDate:
           type: string
           format: date
+          nullable: true
         deliveryAddress:
-          $ref: "#/components/schemas/DeliveryAddressRequest"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/DeliveryAddressRequest"
         employeeId:
           type: string
           format: uuid
+          nullable: true
         employeeEmail:
           type: string
+          nullable: true
         employee:
-          $ref: "#/components/schemas/CreateEmployeeRequest"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/CreateEmployeeRequest"
         contactPersonFullName:
           type: string
+          nullable: true
         contactPersonPhone:
           type: string
+          nullable: true
         contactPersonEmail:
           type: string
+          nullable: true
         companyEntityName:
           type: string
+          nullable: true
         companyEntityId:
           type: string
           format: uuid
+          nullable: true
         notes:
           type: string
+          nullable: true
         purchaseOrderNumber:
           type: string
+          nullable: true
         paymentMethod:
-          $ref: "#/components/schemas/PaymentMethodDto"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/PaymentMethodDto"
         depOrganisationId:
           type: string
+          nullable: true
         depRequested:
           type: boolean
         windowsAutopilotRequested:
           type: boolean
         deliveryType:
           type: string
+          nullable: true
           enum:
           - STANDARD
           - EXPRESS
         companyAddressId:
           type: string
           format: uuid
+          nullable: true
         companyAddress:
-          $ref: "#/components/schemas/CompanyAddressRequest"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/CompanyAddressRequest"
         paymentMethodType:
           type: string
           enum:
@@ -3732,14 +4532,12 @@ components:
           - STRIPE
         paymentMethodSource:
           type: string
+          nullable: true
           enum:
           - GB
           - EU
           - US
     OrderEquipmentRequest:
-      required:
-      - id
-      - size
       type: object
       properties:
         id:
@@ -3751,19 +4549,23 @@ components:
         keyboardLayoutId:
           type: string
           format: uuid
+          nullable: true
         equipmentWarrantyId:
           type: string
           format: uuid
+          nullable: true
     PaymentMethodDto:
       type: object
       properties:
         method:
           type: string
+          nullable: true
           enum:
           - CREDIT_LINE
           - STRIPE
         source:
           type: string
+          nullable: true
           enum:
           - GB
           - EU
@@ -3778,14 +4580,6 @@ components:
       discriminator:
         propertyName: clazz
     CompanyDepOrganisation:
-      required:
-      - companyId
-      - createdAt
-      - id
-      - name
-      - organisationId
-      - state
-      - updatedAt
       type: object
       properties:
         id:
@@ -3810,10 +4604,6 @@ components:
           type: string
           format: date-time
     CompanyDepOrganisationResponse:
-      required:
-      - id
-      - name
-      - organisationId
       type: object
       properties:
         id:
@@ -3824,8 +4614,6 @@ components:
         name:
           type: string
     CompanyEntityResponse:
-      required:
-      - id
       type: object
       properties:
         id:
@@ -3833,20 +4621,29 @@ components:
           format: uuid
         legalName:
           type: string
+          nullable: true
         streetLine1:
           type: string
+          nullable: true
         streetLine2:
           type: string
+          nullable: true
         postalCode:
           type: string
+          nullable: true
         city:
           type: string
+          nullable: true
         invoicingEmail:
           type: string
+          nullable: true
         country:
-          $ref: "#/components/schemas/CountryResponse"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/CountryResponse"
         countrySubdivisionCode:
           type: string
+          nullable: true
         currency:
           type: object
           properties:
@@ -3865,15 +4662,14 @@ components:
             defaultFractionDigits:
               type: integer
               format: int32
+          nullable: true
         vatId:
           type: string
+          nullable: true
         vies:
           type: boolean
+          nullable: true
     DepAggregate:
-      required:
-      - depOrganisation
-      - depPartners
-      - organisationId
       type: object
       properties:
         organisationId:
@@ -3890,22 +4686,18 @@ components:
       properties:
         organisationId:
           type: string
+          nullable: true
         depPartners:
           uniqueItems: true
           type: array
+          nullable: true
           items:
             $ref: "#/components/schemas/DepPartner"
         depOrganisation:
-          $ref: "#/components/schemas/CompanyDepOrganisationResponse"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/CompanyDepOrganisationResponse"
     DepPartner:
-      required:
-      - countryCodes
-      - createdAt
-      - id
-      - name
-      - resellerId
-      - state
-      - updatedAt
       type: object
       properties:
         id:
@@ -3931,8 +4723,6 @@ components:
           type: string
           format: date-time
     DeviceEnrollmentResponse:
-      required:
-      - type
       type: object
       properties:
         type:
@@ -3943,13 +4733,14 @@ components:
           - WINDOWS_AUTOPILOT_AUTOMATIC
           - NONE
         windowsAutopilot:
-          $ref: "#/components/schemas/WindowsAutopilotResponse"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/WindowsAutopilotResponse"
         dep:
-          $ref: "#/components/schemas/DepAggregate"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/DepAggregate"
     IbanDetails:
-      required:
-      - iban
-      - swift
       type: object
       allOf:
       - $ref: "#/components/schemas/BankAccountDetails"
@@ -3960,9 +4751,6 @@ components:
           swift:
             type: string
     InvoiceDocumentResponse:
-      required:
-      - id
-      - type
       type: object
       properties:
         id:
@@ -3970,6 +4758,7 @@ components:
           format: uuid
         documentRef:
           type: string
+          nullable: true
         type:
           type: string
           enum:
@@ -3980,15 +4769,11 @@ components:
           - CREDIT_NOTE
         url:
           type: string
+          nullable: true
         filename:
           type: string
+          nullable: true
     InvoiceItemResponse:
-      required:
-      - createdAt
-      - id
-      - isVatApplicable
-      - type
-      - updatedAt
       type: object
       properties:
         id:
@@ -3996,6 +4781,7 @@ components:
           format: uuid
         referenceId:
           type: string
+          nullable: true
         type:
           type: string
           enum:
@@ -4019,25 +4805,27 @@ components:
           - EXPORT_FEE
         description:
           type: string
+          nullable: true
         grossPrice:
-          $ref: "#/components/schemas/Money"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/Money"
         netPrice:
-          $ref: "#/components/schemas/Money"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/Money"
         vatPercentageRate:
           type: string
-        isVatApplicable:
-          type: boolean
+          nullable: true
         updatedAt:
           type: string
           format: date-time
         createdAt:
           type: string
           format: date-time
+        vatApplicable:
+          type: boolean
     InvoiceResponse:
-      required:
-      - id
-      - state
-      - type
       type: object
       properties:
         id:
@@ -4046,14 +4834,17 @@ components:
         url:
           type: string
           description: use documents
+          nullable: true
           deprecated: true
         filename:
           type: string
           description: use documents
+          nullable: true
           deprecated: true
         documentType:
           type: string
           description: use documents
+          nullable: true
           deprecated: true
           enum:
           - INVOICE
@@ -4064,12 +4855,16 @@ components:
         invoiceRef:
           type: string
           description: use documents
+          nullable: true
           deprecated: true
         companyEntity:
-          $ref: "#/components/schemas/CompanyEntityResponse"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/CompanyEntityResponse"
         tequipyEntityId:
           type: string
           format: uuid
+          nullable: true
         type:
           type: string
           enum:
@@ -4084,16 +4879,23 @@ components:
         paymentDueAt:
           type: string
           format: date-time
+          nullable: true
         grossPrice:
-          $ref: "#/components/schemas/Money"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/Money"
         netPrice:
-          $ref: "#/components/schemas/Money"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/Money"
         createdAt:
           type: string
           format: date-time
+          nullable: true
         updatedAt:
           type: string
           format: date-time
+          nullable: true
         state:
           type: string
           enum:
@@ -4105,18 +4907,19 @@ components:
           - DELETED
         invoiceItems:
           type: array
+          nullable: true
           items:
             $ref: "#/components/schemas/InvoiceItemResponse"
         documents:
           type: array
+          nullable: true
           items:
             $ref: "#/components/schemas/InvoiceDocumentResponse"
         payment:
-          $ref: "#/components/schemas/PaymentMethod"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/PaymentMethod"
     OrderCompanyResponse:
-      required:
-      - id
-      - name
       type: object
       properties:
         id:
@@ -4142,11 +4945,8 @@ components:
             defaultFractionDigits:
               type: integer
               format: int32
+          nullable: true
     OrderEquipmentResponse:
-      required:
-      - equipment
-      - id
-      - size
       type: object
       properties:
         id:
@@ -4158,40 +4958,52 @@ components:
           type: integer
           format: int32
         itemPrice:
-          $ref: "#/components/schemas/Money"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/Money"
         type:
           type: string
+          nullable: true
         userEquipments:
           type: array
+          nullable: true
           items:
             $ref: "#/components/schemas/UserEquipmentResponse"
         equipmentWarranty:
-          $ref: "#/components/schemas/EquipmentWarrantyResponse"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/EquipmentWarrantyResponse"
         updatedAt:
           type: string
           format: date-time
+          nullable: true
         deviceEnrollment:
-          $ref: "#/components/schemas/DeviceEnrollmentResponse"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/DeviceEnrollmentResponse"
     OrderResponse:
-      required:
-      - delayed
-      - invoicePaid
-      - invoiceSent
       type: object
       properties:
         id:
           type: string
+          nullable: true
         orderEquipment:
           uniqueItems: true
           type: array
+          nullable: true
           items:
             $ref: "#/components/schemas/OrderEquipmentResponse"
         invoice:
-          $ref: "#/components/schemas/InvoiceResponse"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/InvoiceResponse"
         orderDelivery:
-          $ref: "#/components/schemas/EquipmentDeliveryResponse"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/EquipmentDeliveryResponse"
         state:
           type: string
+          nullable: true
           enum:
           - ONBOARDING_SET
           - PAYMENT_PENDING
@@ -4208,6 +5020,7 @@ components:
           - DELETED
         type:
           type: string
+          nullable: true
           enum:
           - NEW_EMPLOYEE
           - ASSIGN_EXISTING
@@ -4216,36 +5029,51 @@ components:
           - TEQUIPY_WAREHOUSE
         deliveryNumber:
           type: string
+          nullable: true
         deliveryUrl:
           type: string
+          nullable: true
         deliveryCompany:
           type: string
+          nullable: true
         deliveryCountry:
           type: string
+          nullable: true
         deliveryCountryCode:
           type: string
+          nullable: true
         deliveryFullName:
           type: string
+          nullable: true
         deliveryType:
           type: string
+          nullable: true
           enum:
           - STANDARD
           - EXPRESS
         company:
-          $ref: "#/components/schemas/OrderCompanyResponse"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/OrderCompanyResponse"
         user:
-          $ref: "#/components/schemas/UserResponse"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/UserResponse"
         deliveryAddress:
-          $ref: "#/components/schemas/DeliveryAddressResponse"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/DeliveryAddressResponse"
         estimatedDeliveryDate:
           type: string
           description: No longer used
           format: date
+          nullable: true
           deprecated: true
         delayed:
           type: boolean
         delayReason:
           type: string
+          nullable: true
           enum:
           - AWAITING_STOCK
           - CTO_BUILD_TIME
@@ -4255,88 +5083,125 @@ components:
           - HOLIDAY_PERIOD
         deliveryFailureReason:
           type: string
+          nullable: true
         estimatedDeliveryDateHistory:
           type: array
+          nullable: true
           items:
             $ref: "#/components/schemas/EventLogEstimatedDeliveryDateResponse"
         contactPersonFullName:
           type: string
+          nullable: true
         contactPersonEmail:
           type: string
+          nullable: true
         requesterEmail:
           type: string
           description: Use requesterUser instead
+          nullable: true
           deprecated: true
         requesterUser:
-          $ref: "#/components/schemas/UserResponse"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/UserResponse"
         contactPersonPhone:
           type: string
+          nullable: true
         companyEntityName:
           type: string
+          nullable: true
         createdDate:
           type: string
           format: date-time
+          nullable: true
         deliveryFailedAt:
           type: string
           format: date-time
+          nullable: true
         startProcessingAt:
           type: string
           format: date-time
+          nullable: true
         awaitingCtoOrderAt:
           type: string
           format: date-time
+          nullable: true
         sentAt:
           type: string
           format: date-time
+          nullable: true
         outForDeliveryAt:
           type: string
           format: date-time
+          nullable: true
         completedDate:
           type: string
           format: date-time
+          nullable: true
         cancelledAt:
           type: string
           format: date-time
+          nullable: true
         archivedAt:
           type: string
           format: date-time
+          nullable: true
         startDate:
           type: string
           format: date
+          nullable: true
         totalPrice:
-          $ref: "#/components/schemas/Money"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/Money"
         invoicePaid:
           type: boolean
         invoiceAmount:
           type: number
+          nullable: true
         invoiceSent:
           type: boolean
         notes:
           type: string
+          nullable: true
         purchaseOrderNumber:
           type: string
+          nullable: true
         tequipyNotes:
           type: string
+          nullable: true
         paymentDetails:
-          $ref: "#/components/schemas/PaymentDetailsResponse"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/PaymentDetailsResponse"
         paymentMethod:
-          $ref: "#/components/schemas/PaymentMethodDto"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/PaymentMethodDto"
         dep:
-          $ref: "#/components/schemas/DepOrderResponse"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/DepOrderResponse"
         companyAddress:
-          $ref: "#/components/schemas/CompanyAddressResponse"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/CompanyAddressResponse"
     PaymentDetailsResponse:
       type: object
       properties:
         details:
+          nullable: true
           oneOf:
           - $ref: "#/components/schemas/IbanDetails"
           - $ref: "#/components/schemas/RoutingAccountDetails"
           - $ref: "#/components/schemas/SortCodeDetails"
         title:
           type: string
+          nullable: true
         receiver:
-          $ref: "#/components/schemas/PaymentReceiverResponse"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/PaymentReceiverResponse"
         currency:
           type: object
           properties:
@@ -4355,9 +5220,8 @@ components:
             defaultFractionDigits:
               type: integer
               format: int32
+          nullable: true
     PaymentMethod:
-      required:
-      - method
       type: object
       properties:
         method:
@@ -4367,6 +5231,7 @@ components:
           - STRIPE
         source:
           type: string
+          nullable: true
           enum:
           - GB
           - EU
@@ -4376,20 +5241,24 @@ components:
       properties:
         name:
           type: string
+          nullable: true
         streetLine1:
           type: string
+          nullable: true
         city:
           type: string
+          nullable: true
         postalCode:
           type: string
+          nullable: true
         country:
-          $ref: "#/components/schemas/CountryResponse"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/CountryResponse"
         countrySubdivisionCode:
           type: string
+          nullable: true
     RoutingAccountDetails:
-      required:
-      - accountNumber
-      - routingNumber
       type: object
       allOf:
       - $ref: "#/components/schemas/BankAccountDetails"
@@ -4400,9 +5269,6 @@ components:
           accountNumber:
             type: string
     SortCodeDetails:
-      required:
-      - accountNumber
-      - sortCode
       type: object
       allOf:
       - $ref: "#/components/schemas/BankAccountDetails"
@@ -4414,25 +5280,30 @@ components:
             type: string
           bankName:
             type: string
+            nullable: true
     OrderQueryRequest:
       type: object
       properties:
         orderedForIds:
           uniqueItems: true
           type: array
+          nullable: true
           items:
             type: string
             format: uuid
         countries:
           type: array
+          nullable: true
           items:
             type: string
         createdFrom:
           type: string
           format: date
+          nullable: true
         states:
           uniqueItems: true
           type: array
+          nullable: true
           items:
             type: string
             enum:
@@ -4451,28 +5322,34 @@ components:
             - DELETED
         searchPhrase:
           type: string
+          nullable: true
         companyId:
           type: string
           format: uuid
+          nullable: true
         ids:
           uniqueItems: true
           type: array
+          nullable: true
           items:
             type: string
         companyAddressIds:
           uniqueItems: true
           type: array
+          nullable: true
           items:
             type: string
             format: uuid
         warehouseIds:
           uniqueItems: true
           type: array
+          nullable: true
           items:
             type: string
             format: uuid
         orderedForType:
           type: string
+          nullable: true
           enum:
           - EMPLOYEE
           - COMPANY_ADDRESS
@@ -4486,6 +5363,8 @@ components:
         totalPages:
           type: integer
           format: int32
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
         first:
           type: boolean
         last:
@@ -4505,456 +5384,196 @@ components:
         numberOfElements:
           type: integer
           format: int32
-        pageable:
-          $ref: "#/components/schemas/PageableObject"
         empty:
           type: boolean
     CreateOffboardingRequest:
       required:
-      - isChargerReplacementAllowed
       - userId
       type: object
       properties:
         userId:
           type: string
           format: uuid
+          nullable: true
         offboardingEquipmentIds:
           uniqueItems: true
           type: array
+          nullable: true
           items:
             type: string
             format: uuid
         givenEquipmentIds:
           uniqueItems: true
           type: array
+          nullable: true
           items:
             type: string
             format: uuid
         sellBackEquipmentIds:
           uniqueItems: true
           type: array
+          nullable: true
           items:
             type: string
             format: uuid
         companyEntityId:
           type: string
           format: uuid
+          nullable: true
         lastWorkingDayAt:
           type: string
           format: date-time
+          nullable: true
         pickUpDetails:
-          $ref: "#/components/schemas/PickUpDetailsRequest"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/PickUpDetailsRequest"
         notes:
           type: string
-        isChargerReplacementAllowed:
-          type: boolean
+          nullable: true
         firstContactAt:
           type: string
           format: date-time
-    PickUpDetailsRequest:
-      type: object
-      properties:
-        privateEmail:
-          type: string
-        phoneNumber:
-          type: string
-        fullName:
-          type: string
-        city:
-          type: string
-        postalCode:
-          type: string
-        country:
-          type: string
-          description: use countryCode
-          deprecated: true
-        countryCode:
-          type: string
-          enum:
-          - UNDEFINED
-          - AC
-          - AD
-          - AE
-          - AF
-          - AG
-          - AI
-          - AL
-          - AM
-          - AN
-          - AO
-          - AQ
-          - AR
-          - AS
-          - AT
-          - AU
-          - AW
-          - AX
-          - AZ
-          - BA
-          - BB
-          - BD
-          - BE
-          - BF
-          - BG
-          - BH
-          - BI
-          - BJ
-          - BL
-          - BM
-          - BN
-          - BO
-          - BQ
-          - BR
-          - BS
-          - BT
-          - BU
-          - BV
-          - BW
-          - BY
-          - BZ
-          - CA
-          - CC
-          - CD
-          - CF
-          - CG
-          - CH
-          - CI
-          - CK
-          - CL
-          - CM
-          - CN
-          - CO
-          - CP
-          - CR
-          - CS
-          - CU
-          - CV
-          - CW
-          - CX
-          - CY
-          - CZ
-          - DE
-          - DG
-          - DJ
-          - DK
-          - DM
-          - DO
-          - DZ
-          - EA
-          - EC
-          - EE
-          - EG
-          - EH
-          - ER
-          - ES
-          - ET
-          - EU
-          - EZ
-          - FI
-          - FJ
-          - FK
-          - FM
-          - FO
-          - FR
-          - FX
-          - GA
-          - GB
-          - GD
-          - GE
-          - GF
-          - GG
-          - GH
-          - GI
-          - GL
-          - GM
-          - GN
-          - GP
-          - GQ
-          - GR
-          - GS
-          - GT
-          - GU
-          - GW
-          - GY
-          - HK
-          - HM
-          - HN
-          - HR
-          - HT
-          - HU
-          - IC
-          - ID
-          - IE
-          - IL
-          - IM
-          - IN
-          - IO
-          - IQ
-          - IR
-          - IS
-          - IT
-          - JE
-          - JM
-          - JO
-          - JP
-          - KE
-          - KG
-          - KH
-          - KI
-          - KM
-          - KN
-          - KP
-          - KR
-          - KW
-          - KY
-          - KZ
-          - LA
-          - LB
-          - LC
-          - LI
-          - LK
-          - LR
-          - LS
-          - LT
-          - LU
-          - LV
-          - LY
-          - MA
-          - MC
-          - MD
-          - ME
-          - MF
-          - MG
-          - MH
-          - MK
-          - ML
-          - MM
-          - MN
-          - MO
-          - MP
-          - MQ
-          - MR
-          - MS
-          - MT
-          - MU
-          - MV
-          - MW
-          - MX
-          - MY
-          - MZ
-          - NA
-          - NC
-          - NE
-          - NF
-          - NG
-          - NI
-          - NL
-          - "NO"
-          - NP
-          - NR
-          - NT
-          - NU
-          - NZ
-          - OM
-          - PA
-          - PE
-          - PF
-          - PG
-          - PH
-          - PK
-          - PL
-          - PM
-          - PN
-          - PR
-          - PS
-          - PT
-          - PW
-          - PY
-          - QA
-          - RE
-          - RO
-          - RS
-          - RU
-          - RW
-          - SA
-          - SB
-          - SC
-          - SD
-          - SE
-          - SF
-          - SG
-          - SH
-          - SI
-          - SJ
-          - SK
-          - SL
-          - SM
-          - SN
-          - SO
-          - SR
-          - SS
-          - ST
-          - SU
-          - SV
-          - SX
-          - SY
-          - SZ
-          - TA
-          - TC
-          - TD
-          - TF
-          - TG
-          - TH
-          - TJ
-          - TK
-          - TL
-          - TM
-          - TN
-          - TO
-          - TP
-          - TR
-          - TT
-          - TV
-          - TW
-          - TZ
-          - UA
-          - UG
-          - UK
-          - UM
-          - US
-          - UY
-          - UZ
-          - VA
-          - VC
-          - VE
-          - VG
-          - VI
-          - VN
-          - VU
-          - WF
-          - WS
-          - XI
-          - XU
-          - XK
-          - YE
-          - YT
-          - YU
-          - ZA
-          - ZM
-          - ZR
-          - ZW
-        countrySubdivisionCode:
-          type: string
-        streetLine1:
-          type: string
-        streetLine2:
-          type: string
-        address:
-          type: string
+          nullable: true
+        chargerReplacementAllowed:
+          type: boolean
     OffboardingEquipmentResponse:
       type: object
       properties:
         serialNumber:
           type: string
+          nullable: true
         userEquipmentId:
           type: string
           format: uuid
+          nullable: true
         equipment:
-          $ref: "#/components/schemas/EquipmentResponse"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/EquipmentResponse"
         createdAt:
           type: string
           format: date-time
+          nullable: true
         state:
           type: string
+          nullable: true
           enum:
           - ACTIVE
           - DELETED
         updatedAt:
           type: string
           format: date-time
+          nullable: true
         action:
           type: string
+          nullable: true
           enum:
           - GIVE_AWAY
           - RETURN
           - SELL_BACK
     OffboardingResponse:
-      required:
-      - id
-      - state
       type: object
       properties:
         id:
           type: string
         sellbackId:
           type: string
+          nullable: true
         contactEmail:
           type: string
+          nullable: true
         user:
-          $ref: "#/components/schemas/UserResponse"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/UserResponse"
         companyAddress:
-          $ref: "#/components/schemas/CompanyAddressResponse"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/CompanyAddressResponse"
         deliveryAddress:
-          $ref: "#/components/schemas/DeliveryAddressResponse"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/DeliveryAddressResponse"
         lastWorkingDayAt:
           type: string
           format: date-time
+          nullable: true
         createdAt:
           type: string
           format: date-time
+          nullable: true
         updatedAt:
           type: string
           format: date-time
+          nullable: true
         firstEmailSentAt:
           type: string
           format: date-time
+          nullable: true
         firstReminderSentAt:
           type: string
           format: date-time
+          nullable: true
         secondReminderSentAt:
           type: string
           format: date-time
+          nullable: true
         employeeNotRespondingAt:
           type: string
           format: date-time
+          nullable: true
         materialsSentAt:
           type: string
           format: date-time
+          nullable: true
         courierScheduledAt:
           type: string
           format: date-time
+          nullable: true
         readyForPickupAt:
           type: string
           format: date-time
+          nullable: true
         readyForDropoffAt:
           type: string
           format: date-time
+          nullable: true
         pickedUpAt:
           type: string
           format: date-time
+          nullable: true
         deviceInTransitAt:
           type: string
           format: date-time
+          nullable: true
         deviceInTequipyWarehouseAt:
           type: string
           format: date-time
+          nullable: true
         failedAt:
           type: string
           format: date-time
+          nullable: true
         completedAt:
           type: string
           format: date-time
+          nullable: true
         estimatedCompletedAt:
           type: string
           format: date-time
+          nullable: true
         cancelledAt:
           type: string
           format: date-time
+          nullable: true
         firstContactAt:
           type: string
           format: date-time
+          nullable: true
         notes:
           type: string
+          nullable: true
         state:
           type: string
           enum:
@@ -4977,22 +5596,31 @@ components:
           - DELETED
         offboardingEquipments:
           type: array
+          nullable: true
           items:
             $ref: "#/components/schemas/OffboardingEquipmentResponse"
         address:
-          $ref: "#/components/schemas/DeliveryAddressResponse"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/DeliveryAddressResponse"
         price:
-          $ref: "#/components/schemas/Money"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/Money"
         pricingSummary:
-          $ref: "#/components/schemas/PricingSummaryResponse"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/PricingSummaryResponse"
     OffboardingQueryRequest:
       type: object
       properties:
         searchPhrase:
           type: string
+          nullable: true
         states:
           uniqueItems: true
           type: array
+          nullable: true
           items:
             type: string
             enum:
@@ -5016,9 +5644,11 @@ components:
         createdAt:
           type: string
           format: date
+          nullable: true
         lastWorkingDay:
           type: string
           format: date
+          nullable: true
     PageOffboardingResponse:
       type: object
       properties:
@@ -5028,6 +5658,8 @@ components:
         totalPages:
           type: integer
           format: int32
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
         first:
           type: boolean
         last:
@@ -5047,8 +5679,6 @@ components:
         numberOfElements:
           type: integer
           format: int32
-        pageable:
-          $ref: "#/components/schemas/PageableObject"
         empty:
           type: boolean
     InvoiceQueryRequest:
@@ -5057,6 +5687,7 @@ components:
         invoiceTypes:
           uniqueItems: true
           type: array
+          nullable: true
           items:
             type: string
             enum:
@@ -5071,6 +5702,7 @@ components:
         invoiceStates:
           uniqueItems: true
           type: array
+          nullable: true
           items:
             type: string
             enum:
@@ -5082,29 +5714,36 @@ components:
             - DELETED
         searchPhrase:
           type: string
+          nullable: true
         companyEntityIds:
           uniqueItems: true
           type: array
+          nullable: true
           items:
             type: string
             format: uuid
         referenceIds:
           uniqueItems: true
           type: array
+          nullable: true
           items:
             type: string
         createdAtFrom:
           type: string
           format: date-time
+          nullable: true
         createdAtTo:
           type: string
           format: date-time
+          nullable: true
         paidDueAtFrom:
           type: string
           format: date-time
+          nullable: true
         paidDueAtTo:
           type: string
           format: date-time
+          nullable: true
     PageInvoiceResponse:
       type: object
       properties:
@@ -5114,6 +5753,8 @@ components:
         totalPages:
           type: integer
           format: int32
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
         first:
           type: boolean
         last:
@@ -5133,29 +5774,28 @@ components:
         numberOfElements:
           type: integer
           format: int32
-        pageable:
-          $ref: "#/components/schemas/PageableObject"
         empty:
           type: boolean
     EquipmentQueryRequest:
-      required:
-      - employeeOnboarding
       type: object
       properties:
         equipmentIds:
           uniqueItems: true
           type: array
+          nullable: true
           items:
             type: string
             format: uuid
         type:
           type: string
+          nullable: true
           enum:
           - MAIN_COMPUTER
           - ACCESSORY
           - SWAG
         subType:
           type: string
+          nullable: true
           enum:
           - MAIN_COMPUTER
           - SWAG
@@ -5168,10 +5808,12 @@ components:
         tagId:
           type: string
           format: uuid
+          nullable: true
         employeeOnboarding:
           type: boolean
         countryCode:
           type: string
+          nullable: true
           enum:
           - UNDEFINED
           - AC
@@ -5447,6 +6089,7 @@ components:
           - ZW
         searchPhrase:
           type: string
+          nullable: true
         currency:
           type: object
           properties:
@@ -5465,6 +6108,7 @@ components:
             defaultFractionDigits:
               type: integer
               format: int32
+          nullable: true
     PageEquipmentResponse:
       type: object
       properties:
@@ -5474,6 +6118,8 @@ components:
         totalPages:
           type: integer
           format: int32
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
         first:
           type: boolean
         last:
@@ -5481,6 +6127,10 @@ components:
         size:
           type: integer
           format: int32
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/EquipmentResponse"
         number:
           type: integer
           format: int32
@@ -5489,13 +6139,9 @@ components:
         numberOfElements:
           type: integer
           format: int32
-        pageable:
-          $ref: "#/components/schemas/PageableObject"
         empty:
           type: boolean
     CountryQueryRequest:
-      required:
-      - type
       type: object
       properties:
         type:
@@ -5507,17 +6153,17 @@ components:
           - PRICING
           - ALL
     CompanyAddressQueryRequest:
-      required:
-      - withEquipment
       type: object
       properties:
         type:
           type: string
+          nullable: true
           enum:
           - INTERNAL
           - TEQUIPY
         searchPhrase:
           type: string
+          nullable: true
         withEquipment:
           type: boolean
     PageCompanyAddressResponse:
@@ -5529,6 +6175,8 @@ components:
         totalPages:
           type: integer
           format: int32
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
         first:
           type: boolean
         last:
@@ -5548,57 +6196,56 @@ components:
         numberOfElements:
           type: integer
           format: int32
-        pageable:
-          $ref: "#/components/schemas/PageableObject"
         empty:
           type: boolean
     EquipmentCollectionRequest:
-      required:
-      - isChargerReplacementAllowed
       type: object
       properties:
         userId:
           type: string
           format: uuid
+          nullable: true
         companyAddressId:
           type: string
           format: uuid
+          nullable: true
         pickUpDetails:
-          $ref: "#/components/schemas/PickUpDetailsRequest"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/PickUpDetailsRequest"
         collectionEquipmentIds:
           uniqueItems: true
           type: array
+          nullable: true
           items:
             type: string
             format: uuid
         sellBackEquipmentIds:
           uniqueItems: true
           type: array
+          nullable: true
           items:
             type: string
             format: uuid
         companyEntityId:
           type: string
           format: uuid
+          nullable: true
         startAt:
           type: string
           format: date-time
+          nullable: true
         notes:
           type: string
-        isChargerReplacementAllowed:
+          nullable: true
+        chargerReplacementAllowed:
           type: boolean
     CollectionEquipmentResponse:
-      required:
-      - action
-      - createdAt
-      - equipment
-      - state
-      - updatedAt
-      - userEquipmentId
       type: object
       properties:
         serialNumber:
           type: string
+          nullable: true
         userEquipmentId:
           type: string
           format: uuid
@@ -5621,81 +6268,111 @@ components:
           - COLLECT
           - SELL_BACK
     EquipmentCollectionResponse:
-      required:
-      - id
       type: object
       properties:
+        scheduledAt:
+          type: string
+          format: date-time
+          writeOnly: true
         id:
           type: string
         sellbackId:
           type: string
+          nullable: true
         contactEmail:
           type: string
+          nullable: true
         user:
-          $ref: "#/components/schemas/UserResponse"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/UserResponse"
         companyAddress:
-          $ref: "#/components/schemas/CompanyAddressResponse"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/CompanyAddressResponse"
         deliveryAddress:
-          $ref: "#/components/schemas/DeliveryAddressResponse"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/DeliveryAddressResponse"
         createdAt:
           type: string
           format: date-time
+          nullable: true
         updatedAt:
           type: string
           format: date-time
+          nullable: true
         initiatedAt:
           type: string
           format: date-time
+          nullable: true
         firstEmailSentAt:
           type: string
           format: date-time
+          nullable: true
         firstReminderSentAt:
           type: string
           format: date-time
+          nullable: true
         secondReminderSentAt:
           type: string
           format: date-time
+          nullable: true
         employeeNotRespondingAt:
           type: string
           format: date-time
+          nullable: true
         materialsSentAt:
           type: string
           format: date-time
-        scheduledAt:
+          nullable: true
+        courierScheduledAt:
           type: string
           format: date-time
+          nullable: true
         readyForPickupAt:
           type: string
           format: date-time
+          nullable: true
         readyForDropoffAt:
           type: string
           format: date-time
+          nullable: true
         pickedUpAt:
           type: string
           format: date-time
+          nullable: true
         deviceInTransitAt:
           type: string
           format: date-time
+          nullable: true
         deviceInTequipyWarehouseAt:
           type: string
           format: date-time
+          nullable: true
         failedAt:
           type: string
           format: date-time
+          nullable: true
         completedAt:
           type: string
           format: date-time
+          nullable: true
         estimatedCompletedAt:
           type: string
           format: date-time
+          nullable: true
         dropOffAgreedAt:
           type: string
           format: date-time
+          nullable: true
         cancelledAt:
           type: string
           format: date-time
+          nullable: true
         cancellationReason:
           type: string
+          nullable: true
           enum:
           - LOST_IN_TRANSIT
           - UNABLE_TO_REACH_EMPLOYEE
@@ -5703,8 +6380,10 @@ components:
           - OTHER
         notes:
           type: string
+          nullable: true
         state:
           type: string
+          nullable: true
           enum:
           - SCHEDULED
           - FIRST_EMAIL_SENT
@@ -5726,25 +6405,33 @@ components:
           type: array
           description: "superseded by collectionEquipments, which also carries the\
             \ per-item action"
+          nullable: true
           deprecated: true
           items:
             $ref: "#/components/schemas/UserEquipmentResponse"
         collectionEquipments:
           type: array
+          nullable: true
           items:
             $ref: "#/components/schemas/CollectionEquipmentResponse"
         price:
-          $ref: "#/components/schemas/Money"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/Money"
         pricingSummary:
-          $ref: "#/components/schemas/PricingSummaryResponse"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/PricingSummaryResponse"
     EquipmentCollectionQueryRequest:
       type: object
       properties:
         searchPhrase:
           type: string
+          nullable: true
         states:
           uniqueItems: true
           type: array
+          nullable: true
           items:
             type: string
             enum:
@@ -5767,6 +6454,7 @@ components:
         sourceTypes:
           uniqueItems: true
           type: array
+          nullable: true
           items:
             type: string
             enum:
@@ -5775,18 +6463,21 @@ components:
         userIds:
           uniqueItems: true
           type: array
+          nullable: true
           items:
             type: string
             format: uuid
         companyAddressIds:
           uniqueItems: true
           type: array
+          nullable: true
           items:
             type: string
             format: uuid
         createdAt:
           type: string
           format: date
+          nullable: true
     PageEquipmentCollectionResponse:
       type: object
       properties:
@@ -5796,6 +6487,8 @@ components:
         totalPages:
           type: integer
           format: int32
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
         first:
           type: boolean
         last:
@@ -5815,8 +6508,6 @@ components:
         numberOfElements:
           type: integer
           format: int32
-        pageable:
-          $ref: "#/components/schemas/PageableObject"
         empty:
           type: boolean
     UpdateUserRequest:
@@ -5824,22 +6515,29 @@ components:
       properties:
         fullName:
           type: string
+          nullable: true
         position:
           type: string
+          nullable: true
         tags:
           uniqueItems: true
           type: array
+          nullable: true
           items:
             type: string
             format: uuid
         email:
           type: string
+          nullable: true
         privateEmail:
           type: string
+          nullable: true
         phone:
           type: string
+          nullable: true
         role:
           type: string
+          nullable: true
           enum:
           - EMPLOYEE
           - COMPANY_ADMIN
@@ -5850,20 +6548,26 @@ components:
           - API_CLIENT_READONLY
           - AI_AGENT
         address:
-          $ref: "#/components/schemas/DeliveryAddressRequest"
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/DeliveryAddressRequest"
     UpdateUserEquipmentRequest:
       type: object
       properties:
         serialNumber:
           type: string
+          nullable: true
         companyAddressId:
           type: string
           format: uuid
+          nullable: true
         userId:
           type: string
           format: uuid
+          nullable: true
         isNew:
           type: boolean
+          nullable: true
     PageCompanyEntityResponse:
       type: object
       properties:
@@ -5873,6 +6577,8 @@ components:
         totalPages:
           type: integer
           format: int32
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
         first:
           type: boolean
         last:
@@ -5892,8 +6598,6 @@ components:
         numberOfElements:
           type: integer
           format: int32
-        pageable:
-          $ref: "#/components/schemas/PageableObject"
         empty:
           type: boolean
   securitySchemes:
