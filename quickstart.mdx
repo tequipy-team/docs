@@ -167,6 +167,94 @@ The `state` field progresses through:
 
 </Steps>
 
+---
+
+### Add equipment to your inventory
+
+Register a device and describe it with specification parameters. The model type
+decides which parameters apply, and each parameter offers a fixed set of values.
+
+<Steps>
+
+<Step title="List the model types">
+
+```bash cURL
+curl https://prod.backend.tequipy.com/integration/equipment-model-types \
+  -H "Authorization: Bearer $TEQUIPY_TOKEN"
+```
+
+```json
+[
+  "LAPTOP",
+  "MONITOR",
+  "TABLET",
+  "SMARTPHONE",
+  "KEYBOARD_AND_MOUSE",
+  "CABLES",
+  "CHARGER",
+  "ACCESSORIES",
+  "HEADSET"
+]
+```
+
+</Step>
+
+<Step title="Read the parameters of that model type">
+
+```bash cURL
+curl https://prod.backend.tequipy.com/integration/specification-parameters/LAPTOP \
+  -H "Authorization: Bearer $TEQUIPY_TOKEN"
+```
+
+```json
+[
+  {
+    "id": "a1f3c8d2-4e77-4b90-9a11-6c2f8e5d4b03",
+    "key": "ram",
+    "name": "RAM",
+    "values": [
+      { "id": "3f6c1b84-2d55-4a1e-9f70-8c4b2e6a9d11", "value": "16 GB" },
+      { "id": "7ab19e52-c630-4f8d-b214-59d7a0f3c862", "value": "32 GB" }
+    ]
+  }
+]
+```
+
+Collect the `id` of every value you want in `parameterValueIds`. The registry
+changes rarely, so you can cache it and refresh it once a day.
+
+</Step>
+
+<Step title="Create the equipment">
+
+```bash cURL
+curl -X POST https://prod.backend.tequipy.com/integration/user-equipment \
+  -H "Authorization: Bearer $TEQUIPY_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "MacBook Pro 14",
+    "serialNumber": "C02XL0ABCDEF",
+    "modelType": "LAPTOP",
+    "parameterValueIds": ["3f6c1b84-2d55-4a1e-9f70-8c4b2e6a9d11"],
+    "customAttributes": [
+      { "name": "Colour", "value": "Space Grey" }
+    ],
+    "user": { "email": "jane@example.com" }
+  }'
+```
+
+`modelType` is required. `parameterValueIds` is optional, and every id must
+belong to a parameter of that model type. Send `customAttributes` for text the
+registry does not cover — it is shown as written, and it is not filterable.
+
+</Step>
+
+</Steps>
+
+Serial numbers are unique per company. Creating the same serial number twice
+returns an error, so you can retry a failed batch safely. Tell us when a value
+you need is missing from the parameters registry, and we add it.
+
 ## Next steps
 
 <CardGroup cols={3}>
