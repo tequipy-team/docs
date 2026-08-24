@@ -338,6 +338,26 @@ paths:
                 $ref: "#/components/schemas/EquipmentRedeploymentResponse"
       x-mint:
         href: /api-reference/redeployments/create-redeployment
+  /integration/redeployments/{id}/cancel:
+    post:
+      tags:
+      - Redeployments
+      operationId: cancelRedeployment
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/EquipmentRedeploymentResponse"
+      x-mint:
+        href: /api-reference/redeployments/cancel-redeployment
   /integration/redeployments/query:
     post:
       tags:
@@ -405,6 +425,26 @@ paths:
                 $ref: "#/components/schemas/OrderResponse"
       x-mint:
         href: /api-reference/orders/create-order
+  /integration/orders/{id}/cancel:
+    post:
+      tags:
+      - Orders
+      operationId: cancelOrder
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/OrderResponse"
+      x-mint:
+        href: /api-reference/orders/cancel-order
   /integration/orders/query:
     post:
       tags:
@@ -901,6 +941,38 @@ paths:
                   $ref: "#/components/schemas/TagResponse"
       x-mint:
         href: /api-reference/tags/get-tags
+  /integration/specification-parameters/{modelType}:
+    get:
+      tags:
+      - Equipment Specifications
+      operationId: list
+      parameters:
+      - name: modelType
+        in: path
+        required: true
+        schema:
+          type: string
+          enum:
+          - LAPTOP
+          - MONITOR
+          - TABLET
+          - SMARTPHONE
+          - KEYBOARD_AND_MOUSE
+          - CABLES
+          - CHARGER
+          - ACCESSORIES
+          - HEADSET
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SpecificationParameterResponse"
+      x-mint:
+        href: /api-reference/equipment-specifications/list
   /integration/repairs/{id}:
     get:
       tags:
@@ -1002,6 +1074,22 @@ paths:
                 $ref: "#/components/schemas/InvoiceResponse"
       x-mint:
         href: /api-reference/invoices/get-invoice
+  /integration/equipment-model-types:
+    get:
+      tags:
+      - Equipment Specifications
+      operationId: listModelTypes
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  type: string
+      x-mint:
+        href: /api-reference/equipment-specifications/list-model-types
   /integration/countries:
     get:
       tags:
@@ -2234,6 +2322,10 @@ components:
           type: string
           format: date-time
           nullable: true
+        assignedAt:
+          type: string
+          format: date-time
+          nullable: true
         user:
           nullable: true
           allOf:
@@ -2262,10 +2354,6 @@ components:
           nullable: true
           allOf:
           - $ref: "#/components/schemas/CompanyAddressResponse"
-        price:
-          nullable: true
-          allOf:
-          - $ref: "#/components/schemas/Money"
         equipmentWarranty:
           nullable: true
           allOf:
@@ -2680,25 +2768,6 @@ components:
           - ZM
           - ZR
           - ZW
-        currency:
-          type: object
-          properties:
-            numericCode:
-              type: integer
-              format: int32
-            context:
-              type: object
-              properties:
-                providerName:
-                  type: string
-                empty:
-                  type: boolean
-            currencyCode:
-              type: string
-            defaultFractionDigits:
-              type: integer
-              format: int32
-          nullable: true
         abmState:
           type: string
           nullable: true
@@ -3094,11 +3163,42 @@ components:
           nullable: true
           items:
             $ref: "#/components/schemas/FileDto"
+        modelType:
+          type: string
+          nullable: true
+          enum:
+          - LAPTOP
+          - MONITOR
+          - TABLET
+          - SMARTPHONE
+          - KEYBOARD_AND_MOUSE
+          - CABLES
+          - CHARGER
+          - ACCESSORIES
+          - HEADSET
+        parameterValueIds:
+          type: array
+          nullable: true
+          items:
+            type: string
+            format: uuid
+        customAttributes:
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/CustomAttribute"
         serialNumber:
           type: string
           nullable: true
         new:
           type: boolean
+    CustomAttribute:
+      type: object
+      properties:
+        name:
+          type: string
+        value:
+          type: string
     FileDto:
       type: object
       properties:
@@ -4497,6 +4597,9 @@ components:
         notes:
           type: string
           nullable: true
+        requestGoal:
+          type: string
+          nullable: true
         purchaseOrderNumber:
           type: string
           nullable: true
@@ -4505,6 +4608,7 @@ components:
           allOf:
           - $ref: "#/components/schemas/PaymentMethodDto"
         depOrganisationId:
+          pattern: "^\\d{6,}$"
           type: string
           nullable: true
         depRequested:
@@ -4801,6 +4905,7 @@ components:
           - APP
           - HRIS_INTEGRATION
           - EQUIPMENT_SELLBACK
+          - SELLBACK_BUYER
           - DELIVERY
           - EXPORT_FEE
         description:
@@ -4874,6 +4979,7 @@ components:
           - LOGISTICS
           - APP
           - SELLBACK
+          - SELLBACK_BUYER
           - PRECONFIGURATION
           - VENDOR
         paymentDueAt:
@@ -4919,6 +5025,44 @@ components:
           nullable: true
           allOf:
           - $ref: "#/components/schemas/PaymentMethod"
+    OrderApproverResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        fullName:
+          type: string
+        email:
+          type: string
+    OrderCommentResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        authorUserId:
+          type: string
+          format: uuid
+        authorRole:
+          type: string
+          enum:
+          - EMPLOYEE
+          - COMPANY_ADMIN
+          - TEQUIPY_ADMIN
+          - STORAGE
+          - INTERNAL_ADMIN
+          - API_CLIENT
+          - API_CLIENT_READONLY
+          - AI_AGENT
+        message:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
     OrderCompanyResponse:
       type: object
       properties:
@@ -4973,6 +5117,10 @@ components:
           nullable: true
           allOf:
           - $ref: "#/components/schemas/EquipmentWarrantyResponse"
+        keyboardLayout:
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/KeyboardLayoutResponse"
         updatedAt:
           type: string
           format: date-time
@@ -5006,6 +5154,7 @@ components:
           nullable: true
           enum:
           - ONBOARDING_SET
+          - APPROVAL_PENDING
           - PAYMENT_PENDING
           - PAYMENT_FAILED
           - RECEIVED
@@ -5104,6 +5253,16 @@ components:
           nullable: true
           allOf:
           - $ref: "#/components/schemas/UserResponse"
+        approverUser:
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/OrderApproverResponse"
+        eligibleApprovers:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderApproverResponse"
+        portalRequest:
+          type: boolean
         contactPersonPhone:
           type: string
           nullable: true
@@ -5164,6 +5323,14 @@ components:
         notes:
           type: string
           nullable: true
+        requestGoal:
+          type: string
+          nullable: true
+        declineReason:
+          type: string
+          nullable: true
+        autoApproved:
+          type: boolean
         purchaseOrderNumber:
           type: string
           nullable: true
@@ -5186,6 +5353,10 @@ components:
           nullable: true
           allOf:
           - $ref: "#/components/schemas/CompanyAddressResponse"
+        comments:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderCommentResponse"
     PaymentDetailsResponse:
       type: object
       properties:
@@ -5308,6 +5479,7 @@ components:
             type: string
             enum:
             - ONBOARDING_SET
+            - APPROVAL_PENDING
             - PAYMENT_PENDING
             - PAYMENT_FAILED
             - RECEIVED
@@ -5697,6 +5869,7 @@ components:
             - LOGISTICS
             - APP
             - SELLBACK
+            - SELLBACK_BUYER
             - PRECONFIGURATION
             - VENDOR
         invoiceStates:
@@ -6568,6 +6741,28 @@ components:
         isNew:
           type: boolean
           nullable: true
+    SpecificationParameterResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        key:
+          type: string
+        name:
+          type: string
+        values:
+          type: array
+          items:
+            $ref: "#/components/schemas/SpecificationParameterValueResponse"
+    SpecificationParameterValueResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        value:
+          type: string
     PageCompanyEntityResponse:
       type: object
       properties:
