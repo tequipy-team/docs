@@ -5,8 +5,37 @@ description: "Make your first Tequipy API call in minutes."
 
 <Info>
   You'll need an API token to follow this guide. Contact us in your client Slack
-  channel or email support@tequipy.com to obtain one, then store it in an
-  environment variable: `export TEQUIPY_TOKEN=<your-token>`.
+<Steps>
+  <Step title="Open API Access">
+    Log in to Tequipy and go to **Settings → API Access**.
+  </Step>
+
+  <Step title="Generate a token">
+    Click **Generate token**.
+  </Step>
+
+  <Step title="Choose the scope">
+    Select one of the following:
+
+    - **Read-only** — query data
+    - **Read & write** — query data and create resources such as users and orders
+  </Step>
+
+  <Step title="Name the token">
+    Enter a descriptive name, such as `HRIS sync — production`.
+  </Step>
+
+  <Step title="Copy and store the token">
+    Copy the token immediately. For security, it will not be shown again.
+
+    Store it in an environment variable:
+
+    ```bash
+    export TEQUIPY_TOKEN="<your-token>"
+    ```
+  </Step>
+</Steps>
+  Store it in an environment variable: `export TEQUIPY_TOKEN=<your-token>`.
 </Info>
 
 ## Step 1: Verify your token
