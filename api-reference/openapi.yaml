@@ -945,7 +945,7 @@ paths:
     get:
       tags:
       - Equipments
-      operationId: list
+      operationId: listSpecificationParameters
       parameters:
       - name: modelType
         in: path
@@ -972,7 +972,7 @@ paths:
                 items:
                   $ref: "#/components/schemas/SpecificationParameterResponse"
       x-mint:
-        href: /api-reference/equipments/list
+        href: /api-reference/equipments/list-specification-parameters
   /integration/repairs/{id}:
     get:
       tags:
@@ -2170,6 +2170,10 @@ components:
           format: int32
         pageable:
           $ref: "#/components/schemas/PageableObject"
+        first:
+          type: boolean
+        last:
+          type: boolean
         size:
           type: integer
           format: int32
@@ -2185,10 +2189,6 @@ components:
         numberOfElements:
           type: integer
           format: int32
-        first:
-          type: boolean
-        last:
-          type: boolean
         empty:
           type: boolean
     PageableObject:
@@ -2789,6 +2789,10 @@ components:
           format: int32
         pageable:
           $ref: "#/components/schemas/PageableObject"
+        first:
+          type: boolean
+        last:
+          type: boolean
         size:
           type: integer
           format: int32
@@ -2804,10 +2808,6 @@ components:
         numberOfElements:
           type: integer
           format: int32
-        first:
-          type: boolean
-        last:
-          type: boolean
         empty:
           type: boolean
     CompanyAddressDto:
@@ -3126,13 +3126,6 @@ components:
         name:
           type: string
           nullable: true
-        specification:
-          type: array
-          nullable: true
-          items:
-            type: object
-            additionalProperties:
-              type: string
         image:
           nullable: true
           allOf:
@@ -3145,18 +3138,6 @@ components:
           nullable: true
           allOf:
           - $ref: "#/components/schemas/UserDto"
-        type:
-          type: string
-          nullable: true
-          enum:
-          - MAIN_COMPUTER
-          - SWAG
-          - SCREEN
-          - MOUSE
-          - KEYBOARD
-          - HEADSET
-          - OTHER
-          - PHONE
         files:
           uniqueItems: true
           type: array
@@ -3649,6 +3630,10 @@ components:
           format: int32
         pageable:
           $ref: "#/components/schemas/PageableObject"
+        first:
+          type: boolean
+        last:
+          type: boolean
         size:
           type: integer
           format: int32
@@ -3664,10 +3649,6 @@ components:
         numberOfElements:
           type: integer
           format: int32
-        first:
-          type: boolean
-        last:
-          type: boolean
         empty:
           type: boolean
     CompanyAddressRequest:
@@ -4518,6 +4499,10 @@ components:
           format: int32
         pageable:
           $ref: "#/components/schemas/PageableObject"
+        first:
+          type: boolean
+        last:
+          type: boolean
         size:
           type: integer
           format: int32
@@ -4533,10 +4518,6 @@ components:
         numberOfElements:
           type: integer
           format: int32
-        first:
-          type: boolean
-        last:
-          type: boolean
         empty:
           type: boolean
     CreateOrderRequest:
@@ -4751,19 +4732,19 @@ components:
         currency:
           type: object
           properties:
+            numericCode:
+              type: integer
+              format: int32
             context:
               type: object
               properties:
-                providerName:
-                  type: string
                 empty:
                   type: boolean
+                providerName:
+                  type: string
             currencyCode:
               type: string
             defaultFractionDigits:
-              type: integer
-              format: int32
-            numericCode:
               type: integer
               format: int32
           nullable: true
@@ -5074,19 +5055,19 @@ components:
         currency:
           type: object
           properties:
+            numericCode:
+              type: integer
+              format: int32
             context:
               type: object
               properties:
-                providerName:
-                  type: string
                 empty:
                   type: boolean
+                providerName:
+                  type: string
             currencyCode:
               type: string
             defaultFractionDigits:
-              type: integer
-              format: int32
-            numericCode:
               type: integer
               format: int32
           nullable: true
@@ -5376,19 +5357,19 @@ components:
         currency:
           type: object
           properties:
+            numericCode:
+              type: integer
+              format: int32
             context:
               type: object
               properties:
-                providerName:
-                  type: string
                 empty:
                   type: boolean
+                providerName:
+                  type: string
             currencyCode:
               type: string
             defaultFractionDigits:
-              type: integer
-              format: int32
-            numericCode:
               type: integer
               format: int32
           nullable: true
@@ -5471,6 +5452,10 @@ components:
           type: string
           format: date
           nullable: true
+        createdTo:
+          type: string
+          format: date
+          nullable: true
         states:
           uniqueItems: true
           type: array
@@ -5537,6 +5522,10 @@ components:
           format: int32
         pageable:
           $ref: "#/components/schemas/PageableObject"
+        first:
+          type: boolean
+        last:
+          type: boolean
         size:
           type: integer
           format: int32
@@ -5552,10 +5541,6 @@ components:
         numberOfElements:
           type: integer
           format: int32
-        first:
-          type: boolean
-        last:
-          type: boolean
         empty:
           type: boolean
     CreateOffboardingRequest:
@@ -5832,6 +5817,10 @@ components:
           format: int32
         pageable:
           $ref: "#/components/schemas/PageableObject"
+        first:
+          type: boolean
+        last:
+          type: boolean
         size:
           type: integer
           format: int32
@@ -5847,10 +5836,6 @@ components:
         numberOfElements:
           type: integer
           format: int32
-        first:
-          type: boolean
-        last:
-          type: boolean
         empty:
           type: boolean
     InvoiceQueryRequest:
@@ -5928,6 +5913,10 @@ components:
           format: int32
         pageable:
           $ref: "#/components/schemas/PageableObject"
+        first:
+          type: boolean
+        last:
+          type: boolean
         size:
           type: integer
           format: int32
@@ -5943,10 +5932,6 @@ components:
         numberOfElements:
           type: integer
           format: int32
-        first:
-          type: boolean
-        last:
-          type: boolean
         empty:
           type: boolean
     EquipmentQueryRequest:
@@ -6266,19 +6251,19 @@ components:
         currency:
           type: object
           properties:
+            numericCode:
+              type: integer
+              format: int32
             context:
               type: object
               properties:
-                providerName:
-                  type: string
                 empty:
                   type: boolean
+                providerName:
+                  type: string
             currencyCode:
               type: string
             defaultFractionDigits:
-              type: integer
-              format: int32
-            numericCode:
               type: integer
               format: int32
           nullable: true
@@ -6293,6 +6278,10 @@ components:
           format: int32
         pageable:
           $ref: "#/components/schemas/PageableObject"
+        first:
+          type: boolean
+        last:
+          type: boolean
         size:
           type: integer
           format: int32
@@ -6308,15 +6297,9 @@ components:
         numberOfElements:
           type: integer
           format: int32
-        first:
-          type: boolean
-        last:
-          type: boolean
         empty:
           type: boolean
     CountryQueryRequest:
-      required:
-      - type
       type: object
       properties:
         type:
@@ -6352,6 +6335,10 @@ components:
           format: int32
         pageable:
           $ref: "#/components/schemas/PageableObject"
+        first:
+          type: boolean
+        last:
+          type: boolean
         size:
           type: integer
           format: int32
@@ -6367,10 +6354,6 @@ components:
         numberOfElements:
           type: integer
           format: int32
-        first:
-          type: boolean
-        last:
-          type: boolean
         empty:
           type: boolean
     EquipmentCollectionRequest:
@@ -6664,6 +6647,10 @@ components:
           format: int32
         pageable:
           $ref: "#/components/schemas/PageableObject"
+        first:
+          type: boolean
+        last:
+          type: boolean
         size:
           type: integer
           format: int32
@@ -6679,10 +6666,6 @@ components:
         numberOfElements:
           type: integer
           format: int32
-        first:
-          type: boolean
-        last:
-          type: boolean
         empty:
           type: boolean
     UpdateUserRequest:
@@ -6776,6 +6759,10 @@ components:
           format: int32
         pageable:
           $ref: "#/components/schemas/PageableObject"
+        first:
+          type: boolean
+        last:
+          type: boolean
         size:
           type: integer
           format: int32
@@ -6791,10 +6778,6 @@ components:
         numberOfElements:
           type: integer
           format: int32
-        first:
-          type: boolean
-        last:
-          type: boolean
         empty:
           type: boolean
   securitySchemes:
