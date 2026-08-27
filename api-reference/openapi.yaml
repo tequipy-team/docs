@@ -6315,6 +6315,8 @@ components:
         empty:
           type: boolean
     CountryQueryRequest:
+      required:
+      - type
       type: object
       properties:
         type:
