@@ -29,6 +29,9 @@ paths:
       - Users
       operationId: createEmployee
       requestBody:
+        description: "`fullName`, `email` and `role` are required. Only `EMPLOYEE`\
+          \ and `COMPANY_ADMIN` are accepted for `role`. `equipmentIds` and `tags`\
+          \ must reference equipment/tags already belonging to your company."
         content:
           application/json:
             schema:
@@ -166,6 +169,11 @@ paths:
       - User Equipment
       operationId: createUserEquipment
       requestBody:
+        description: "`name` and `modelType` are always required. When `companyAddress`\
+          \ is set without an `id`, `companyAddress.addressName` and `companyAddress.countryCode`\
+          \ are required to create a new address. `user` is optional — omit it to\
+          \ assign the equipment to the company's STORAGE user; if `user.id` is set,\
+          \ it must reference an existing user."
         content:
           application/json:
             schema:
@@ -318,12 +326,37 @@ paths:
                 $ref: "#/components/schemas/PageEquipmentRepairResponse"
       x-mint:
         href: /api-reference/repairs/query-repairs
+  /integration/repairs/pricing:
+    post:
+      tags:
+      - Repairs
+      operationId: getRepairPricing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PricingRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PricingSummaryResponse"
+      x-mint:
+        href: /api-reference/repairs/get-repair-pricing
   /integration/redeployments:
     post:
       tags:
       - Redeployments
       operationId: createRedeployment
       requestBody:
+        description: '`storageEquipmentIds` is required (non-empty) and must reference
+          ACTIVE equipment belonging to your company. Exactly one of `employeeId`
+          or `companyAddressId` is required — `employee` and `companyAddress` (creating
+          new records) are not supported via this integration API. `deliveryAddress.countryCode`
+          is always required.'
         content:
           application/json:
             schema:
@@ -411,6 +444,15 @@ paths:
       - Orders
       operationId: createOrder
       requestBody:
+        description: |-
+          Required fields depend on `orderType`:
+
+          - `ASSIGN_EXISTING` — non-empty `equipment`, plus either `companyAddressId` or a `deliveryAddress` with `countryCode` and `fullName`
+          - `NEW_EMPLOYEE` — non-empty `equipment`, a `deliveryAddress` with `countryCode` and `fullName`, plus `employee` with `fullName`, `email` and `phone`. The contact person defaults to the employee's name, phone and email, so send `contactPersonPhone` when `employee.phone` is missing. The top-level `startDate` is used; `employee.startDate` and `employee.tags` are ignored
+          - `ONBOARDING` — `employee` with `fullName`, `email`, `privateEmail`, `phone` and `tags`
+          - `TEQUIPY_WAREHOUSE` — non-empty `equipment`, a `deliveryAddress` with `countryCode`, and `paymentMethod`
+
+          A missing field returns 400 with the field name in `message`.
         content:
           application/json:
             schema:
@@ -498,6 +540,14 @@ paths:
       - Offboardings
       operationId: createOffboarding
       requestBody:
+        description: "If both `offboardingEquipmentIds` and `sellBackEquipmentIds`\
+          \ are empty, all of the user's ACTIVE equipment is automatically given away.\
+          \ Otherwise, every ACTIVE equipment item must appear in exactly one of `offboardingEquipmentIds`,\
+          \ `givenEquipmentIds` or `sellBackEquipmentIds`. `pickUpDetails` (with `countryCode`\
+          \ and `privateEmail`) is required whenever `offboardingEquipmentIds` or\
+          \ `sellBackEquipmentIds` is non-empty. `companyEntityId` is required and\
+          \ must reference an existing company entity when `sellBackEquipmentIds`\
+          \ is non-empty."
         content:
           application/json:
             schema:
@@ -631,6 +681,8 @@ paths:
     post:
       tags:
       - Equipments
+      description: The price and additions fields of EquipmentResponse are only populated
+        when countryCode is set in the request.
       operationId: queryEquipments
       parameters:
       - name: page
@@ -749,6 +801,11 @@ paths:
       - Collections
       operationId: createCollection
       requestBody:
+        description: '`userId` is required unless `companyAddressId` is set — but
+          `companyAddressId` is not usable via this integration API (API clients can
+          only create collections for a user). `pickUpDetails` is always required.
+          Selling back equipment (`sellBackEquipmentIds` non-empty) additionally requires
+          `companyEntityId` and a `pickUpDetails.countryCode` that supports sellback.'
         content:
           application/json:
             schema:
@@ -864,6 +921,9 @@ paths:
           type: string
           format: uuid
       requestBody:
+        description: "All fields are optional; only the ones set are updated. If `role`\
+          \ is set, only `EMPLOYEE` and `COMPANY_ADMIN` are accepted. `tags` must\
+          \ reference tags already belonging to your company."
         content:
           application/json:
             schema:
@@ -929,6 +989,9 @@ paths:
     get:
       tags:
       - Tags
+      description: "The equipment, equipmentsSize, employees, employeesSize, updatedAt\
+        \ and createdAt fields of TagResponse are always null in this response — only\
+        \ id and name are populated."
       operationId: getTags
       responses:
         "200":
@@ -945,7 +1008,7 @@ paths:
     get:
       tags:
       - Equipments
-      operationId: list
+      operationId: listSpecificationParameters
       parameters:
       - name: modelType
         in: path
@@ -972,7 +1035,7 @@ paths:
                 items:
                   $ref: "#/components/schemas/SpecificationParameterResponse"
       x-mint:
-        href: /api-reference/equipments/list
+        href: /api-reference/equipments/list-specification-parameters
   /integration/repairs/{id}:
     get:
       tags:
@@ -1216,12 +1279,14 @@ components:
       properties:
         fullName:
           type: string
+          description: Required.
           nullable: true
         position:
           type: string
           nullable: true
         email:
           type: string
+          description: Required.
           nullable: true
         phone:
           type: string
@@ -1233,12 +1298,16 @@ components:
         equipmentIds:
           uniqueItems: true
           type: array
+          description: Must reference existing equipment already belonging to your
+            company.
           nullable: true
           items:
             type: string
             format: uuid
         role:
           type: string
+          description: Required when creating an employee via POST /integration/users.
+            Only EMPLOYEE and COMPANY_ADMIN are accepted.
           nullable: true
           enum:
           - EMPLOYEE
@@ -1252,6 +1321,7 @@ components:
         tags:
           uniqueItems: true
           type: array
+          description: Must reference existing tags already belonging to your company.
           nullable: true
           items:
             type: string
@@ -2162,14 +2232,18 @@ components:
     PageUserResponse:
       type: object
       properties:
-        totalElements:
-          type: integer
-          format: int64
         totalPages:
           type: integer
           format: int32
+        totalElements:
+          type: integer
+          format: int64
         pageable:
           $ref: "#/components/schemas/PageableObject"
+        first:
+          type: boolean
+        last:
+          type: boolean
         size:
           type: integer
           format: int32
@@ -2185,10 +2259,6 @@ components:
         numberOfElements:
           type: integer
           format: int32
-        first:
-          type: boolean
-        last:
-          type: boolean
         empty:
           type: boolean
     PageableObject:
@@ -2781,14 +2851,18 @@ components:
     PageUserEquipmentResponse:
       type: object
       properties:
-        totalElements:
-          type: integer
-          format: int64
         totalPages:
           type: integer
           format: int32
+        totalElements:
+          type: integer
+          format: int64
         pageable:
           $ref: "#/components/schemas/PageableObject"
+        first:
+          type: boolean
+        last:
+          type: boolean
         size:
           type: integer
           format: int32
@@ -2804,10 +2878,6 @@ components:
         numberOfElements:
           type: integer
           format: int32
-        first:
-          type: boolean
-        last:
-          type: boolean
         empty:
           type: boolean
     CompanyAddressDto:
@@ -3125,38 +3195,22 @@ components:
       properties:
         name:
           type: string
+          description: Required.
           nullable: true
-        specification:
-          type: array
-          nullable: true
-          items:
-            type: object
-            additionalProperties:
-              type: string
         image:
           nullable: true
           allOf:
           - $ref: "#/components/schemas/FileDto"
         companyAddress:
-          nullable: true
+          description: "Optional. When set without an id, addressName and countryCode\
+            \ are required to create a new address."
           allOf:
           - $ref: "#/components/schemas/CompanyAddressDto"
         user:
-          nullable: true
+          description: "Optional. Omit to assign the equipment to the company's STORAGE\
+            \ user. When set with an id, it must reference an existing user."
           allOf:
           - $ref: "#/components/schemas/UserDto"
-        type:
-          type: string
-          nullable: true
-          enum:
-          - MAIN_COMPUTER
-          - SWAG
-          - SCREEN
-          - MOUSE
-          - KEYBOARD
-          - HEADSET
-          - OTHER
-          - PHONE
         files:
           uniqueItems: true
           type: array
@@ -3165,6 +3219,7 @@ components:
             $ref: "#/components/schemas/FileDto"
         modelType:
           type: string
+          description: Required.
           nullable: true
           enum:
           - LAPTOP
@@ -3244,11 +3299,15 @@ components:
       type: object
       properties:
         pickUpDetails:
+          description: "Optional. When set, the repair starts in SET state pending\
+            \ pickup. When omitted, the repair is created directly in DELIVERED state."
           nullable: true
           allOf:
           - $ref: "#/components/schemas/PickUpDetailsRequest"
         userEquipmentId:
           type: string
+          description: Required. Must reference ACTIVE equipment already belonging
+            to your company.
           format: uuid
           nullable: true
         reason:
@@ -3268,6 +3327,9 @@ components:
           nullable: true
         startAt:
           type: string
+          description: "Only used when pickUpDetails is set. If omitted or in the\
+            \ past, the repair starts immediately instead of waiting for the given\
+            \ pickup time."
           format: date-time
           nullable: true
         notes:
@@ -3275,6 +3337,8 @@ components:
           nullable: true
         companyEntityId:
           type: string
+          description: "Optional. When set, a repair invoice is created billed to\
+            \ this entity, which must belong to your company."
           format: uuid
           nullable: true
     PickUpDetailsRequest:
@@ -3641,14 +3705,18 @@ components:
     PageEquipmentRepairResponse:
       type: object
       properties:
-        totalElements:
-          type: integer
-          format: int64
         totalPages:
           type: integer
           format: int32
+        totalElements:
+          type: integer
+          format: int64
         pageable:
           $ref: "#/components/schemas/PageableObject"
+        first:
+          type: boolean
+        last:
+          type: boolean
         size:
           type: integer
           format: int32
@@ -3664,11 +3732,295 @@ components:
         numberOfElements:
           type: integer
           format: int32
-        first:
-          type: boolean
-        last:
-          type: boolean
         empty:
+          type: boolean
+    PricingRequest:
+      required:
+      - userEquipmentIds
+      type: object
+      properties:
+        countryCode:
+          type: string
+          enum:
+          - UNDEFINED
+          - AC
+          - AD
+          - AE
+          - AF
+          - AG
+          - AI
+          - AL
+          - AM
+          - AN
+          - AO
+          - AQ
+          - AR
+          - AS
+          - AT
+          - AU
+          - AW
+          - AX
+          - AZ
+          - BA
+          - BB
+          - BD
+          - BE
+          - BF
+          - BG
+          - BH
+          - BI
+          - BJ
+          - BL
+          - BM
+          - BN
+          - BO
+          - BQ
+          - BR
+          - BS
+          - BT
+          - BU
+          - BV
+          - BW
+          - BY
+          - BZ
+          - CA
+          - CC
+          - CD
+          - CF
+          - CG
+          - CH
+          - CI
+          - CK
+          - CL
+          - CM
+          - CN
+          - CO
+          - CP
+          - CR
+          - CS
+          - CU
+          - CV
+          - CW
+          - CX
+          - CY
+          - CZ
+          - DE
+          - DG
+          - DJ
+          - DK
+          - DM
+          - DO
+          - DZ
+          - EA
+          - EC
+          - EE
+          - EG
+          - EH
+          - ER
+          - ES
+          - ET
+          - EU
+          - EZ
+          - FI
+          - FJ
+          - FK
+          - FM
+          - FO
+          - FR
+          - FX
+          - GA
+          - GB
+          - GD
+          - GE
+          - GF
+          - GG
+          - GH
+          - GI
+          - GL
+          - GM
+          - GN
+          - GP
+          - GQ
+          - GR
+          - GS
+          - GT
+          - GU
+          - GW
+          - GY
+          - HK
+          - HM
+          - HN
+          - HR
+          - HT
+          - HU
+          - IC
+          - ID
+          - IE
+          - IL
+          - IM
+          - IN
+          - IO
+          - IQ
+          - IR
+          - IS
+          - IT
+          - JE
+          - JM
+          - JO
+          - JP
+          - KE
+          - KG
+          - KH
+          - KI
+          - KM
+          - KN
+          - KP
+          - KR
+          - KW
+          - KY
+          - KZ
+          - LA
+          - LB
+          - LC
+          - LI
+          - LK
+          - LR
+          - LS
+          - LT
+          - LU
+          - LV
+          - LY
+          - MA
+          - MC
+          - MD
+          - ME
+          - MF
+          - MG
+          - MH
+          - MK
+          - ML
+          - MM
+          - MN
+          - MO
+          - MP
+          - MQ
+          - MR
+          - MS
+          - MT
+          - MU
+          - MV
+          - MW
+          - MX
+          - MY
+          - MZ
+          - NA
+          - NC
+          - NE
+          - NF
+          - NG
+          - NI
+          - NL
+          - "NO"
+          - NP
+          - NR
+          - NT
+          - NU
+          - NZ
+          - OM
+          - PA
+          - PE
+          - PF
+          - PG
+          - PH
+          - PK
+          - PL
+          - PM
+          - PN
+          - PR
+          - PS
+          - PT
+          - PW
+          - PY
+          - QA
+          - RE
+          - RO
+          - RS
+          - RU
+          - RW
+          - SA
+          - SB
+          - SC
+          - SD
+          - SE
+          - SF
+          - SG
+          - SH
+          - SI
+          - SJ
+          - SK
+          - SL
+          - SM
+          - SN
+          - SO
+          - SR
+          - SS
+          - ST
+          - SU
+          - SV
+          - SX
+          - SY
+          - SZ
+          - TA
+          - TC
+          - TD
+          - TF
+          - TG
+          - TH
+          - TJ
+          - TK
+          - TL
+          - TM
+          - TN
+          - TO
+          - TP
+          - TR
+          - TT
+          - TV
+          - TW
+          - TZ
+          - UA
+          - UG
+          - UK
+          - UM
+          - US
+          - UY
+          - UZ
+          - VA
+          - VC
+          - VE
+          - VG
+          - VI
+          - VN
+          - VU
+          - WF
+          - WS
+          - XI
+          - XU
+          - XK
+          - YE
+          - YT
+          - YU
+          - ZA
+          - ZM
+          - ZR
+          - ZW
+        userEquipmentIds:
+          minItems: 1
+          type: array
+          items:
+            type: string
+            format: uuid
+        chargerReplacementAllowed:
           type: boolean
     CompanyAddressRequest:
       type: object
@@ -4264,6 +4616,8 @@ components:
         storageEquipmentIds:
           uniqueItems: true
           type: array
+          description: Required (non-empty). Must reference ACTIVE equipment already
+            belonging to your company.
           nullable: true
           items:
             type: string
@@ -4273,15 +4627,18 @@ components:
           format: date
           nullable: true
         deliveryAddress:
-          nullable: true
+          description: countryCode is always required.
           allOf:
           - $ref: "#/components/schemas/DeliveryAddressRequest"
         employeeId:
           type: string
+          description: Required unless companyAddressId is set. Mutually exclusive
+            with companyAddressId.
           format: uuid
           nullable: true
         employee:
-          nullable: true
+          description: Not usable via this integration API — use employeeId to target
+            an existing employee.
           allOf:
           - $ref: "#/components/schemas/CreateEmployeeRequest"
         contactPersonEmail:
@@ -4296,10 +4653,13 @@ components:
           nullable: true
         companyAddressId:
           type: string
+          description: Required unless employeeId is set. Mutually exclusive with
+            employeeId. Must reference an active company address.
           format: uuid
           nullable: true
         companyAddress:
-          nullable: true
+          description: Not usable via this integration API — use companyAddressId
+            to target an existing address.
           allOf:
           - $ref: "#/components/schemas/CompanyAddressRequest"
     EquipmentDeliveryResponse:
@@ -4510,14 +4870,18 @@ components:
     PageEquipmentRedeploymentResponse:
       type: object
       properties:
-        totalElements:
-          type: integer
-          format: int64
         totalPages:
           type: integer
           format: int32
+        totalElements:
+          type: integer
+          format: int64
         pageable:
           $ref: "#/components/schemas/PageableObject"
+        first:
+          type: boolean
+        last:
+          type: boolean
         size:
           type: integer
           format: int32
@@ -4533,10 +4897,6 @@ components:
         numberOfElements:
           type: integer
           format: int32
-        first:
-          type: boolean
-        last:
-          type: boolean
         empty:
           type: boolean
     CreateOrderRequest:
@@ -4548,10 +4908,14 @@ components:
         equipment:
           uniqueItems: true
           type: array
+          description: "Required (non-empty) for ASSIGN_EXISTING, NEW_EMPLOYEE and\
+            \ TEQUIPY_WAREHOUSE. Ignored for ONBOARDING."
           items:
             $ref: "#/components/schemas/OrderEquipmentRequest"
         orderType:
           type: string
+          description: "Only ASSIGN_EXISTING, NEW_EMPLOYEE, ONBOARDING and TEQUIPY_WAREHOUSE\
+            \ are accepted."
           nullable: true
           enum:
           - NEW_EMPLOYEE
@@ -4563,8 +4927,13 @@ components:
           type: string
           format: date
           nullable: true
-        deliveryAddress:
+        requestedDeliveryDate:
+          type: string
+          format: date
           nullable: true
+        deliveryAddress:
+          description: Required for NEW_EMPLOYEE and TEQUIPY_WAREHOUSE. Required for
+            ASSIGN_EXISTING unless companyAddressId is set.
           allOf:
           - $ref: "#/components/schemas/DeliveryAddressRequest"
         employeeId:
@@ -4575,7 +4944,8 @@ components:
           type: string
           nullable: true
         employee:
-          nullable: true
+          description: Required for NEW_EMPLOYEE and ONBOARDING. For NEW_EMPLOYEE
+            the nested startDate and tags are ignored.
           allOf:
           - $ref: "#/components/schemas/CreateEmployeeRequest"
         contactPersonFullName:
@@ -4604,7 +4974,7 @@ components:
           type: string
           nullable: true
         paymentMethod:
-          nullable: true
+          description: Required for TEQUIPY_WAREHOUSE.
           allOf:
           - $ref: "#/components/schemas/PaymentMethodDto"
         depOrganisationId:
@@ -4623,6 +4993,7 @@ components:
           - EXPRESS
         companyAddressId:
           type: string
+          description: Alternative to deliveryAddress for ASSIGN_EXISTING orders.
           format: uuid
           nullable: true
         companyAddress:
@@ -4751,6 +5122,9 @@ components:
         currency:
           type: object
           properties:
+            numericCode:
+              type: integer
+              format: int32
             context:
               type: object
               properties:
@@ -4763,15 +5137,14 @@ components:
             defaultFractionDigits:
               type: integer
               format: int32
-            numericCode:
-              type: integer
-              format: int32
           nullable: true
         vatId:
           type: string
           nullable: true
         vies:
           type: boolean
+          description: Whether this entity's VAT id is validated against the EU VIES
+            (VAT Information Exchange System) registry.
           nullable: true
     DepAggregate:
       type: object
@@ -5004,6 +5377,8 @@ components:
           nullable: true
         state:
           type: string
+          description: CREATED order invoices with an issued (non-cost) document are
+            reported as PAYMENT_PENDING instead.
           enum:
           - CREATED
           - PAYMENT_PENDING
@@ -5022,6 +5397,8 @@ components:
           items:
             $ref: "#/components/schemas/InvoiceDocumentResponse"
         payment:
+          description: "Only populated for payable invoices (CREATED or PAYMENT_FAILED,\
+            \ with an issued document)."
           nullable: true
           allOf:
           - $ref: "#/components/schemas/PaymentMethod"
@@ -5044,6 +5421,8 @@ components:
         authorUserId:
           type: string
           format: uuid
+        authorName:
+          type: string
         authorRole:
           type: string
           enum:
@@ -5074,6 +5453,9 @@ components:
         currency:
           type: object
           properties:
+            numericCode:
+              type: integer
+              format: int32
             context:
               type: object
               properties:
@@ -5084,9 +5466,6 @@ components:
             currencyCode:
               type: string
             defaultFractionDigits:
-              type: integer
-              format: int32
-            numericCode:
               type: integer
               format: int32
           nullable: true
@@ -5164,6 +5543,7 @@ components:
           - DELIVERY_FAILED
           - OUT_FOR_DELIVERY
           - DECLINED
+          - REJECTED
           - DELIVERED
           - ARCHIVED
           - DELETED
@@ -5309,6 +5689,10 @@ components:
           type: string
           format: date
           nullable: true
+        requestedDeliveryDate:
+          type: string
+          format: date
+          nullable: true
         totalPrice:
           nullable: true
           allOf:
@@ -5376,6 +5760,9 @@ components:
         currency:
           type: object
           properties:
+            numericCode:
+              type: integer
+              format: int32
             context:
               type: object
               properties:
@@ -5386,9 +5773,6 @@ components:
             currencyCode:
               type: string
             defaultFractionDigits:
-              type: integer
-              format: int32
-            numericCode:
               type: integer
               format: int32
           nullable: true
@@ -5471,6 +5855,10 @@ components:
           type: string
           format: date
           nullable: true
+        createdTo:
+          type: string
+          format: date
+          nullable: true
         states:
           uniqueItems: true
           type: array
@@ -5489,6 +5877,7 @@ components:
             - DELIVERY_FAILED
             - OUT_FOR_DELIVERY
             - DECLINED
+            - REJECTED
             - DELIVERED
             - ARCHIVED
             - DELETED
@@ -5529,14 +5918,18 @@ components:
     PageOrderResponse:
       type: object
       properties:
-        totalElements:
-          type: integer
-          format: int64
         totalPages:
           type: integer
           format: int32
+        totalElements:
+          type: integer
+          format: int64
         pageable:
           $ref: "#/components/schemas/PageableObject"
+        first:
+          type: boolean
+        last:
+          type: boolean
         size:
           type: integer
           format: int32
@@ -5552,10 +5945,6 @@ components:
         numberOfElements:
           type: integer
           format: int32
-        first:
-          type: boolean
-        last:
-          type: boolean
         empty:
           type: boolean
     CreateOffboardingRequest:
@@ -5570,6 +5959,7 @@ components:
         offboardingEquipmentIds:
           uniqueItems: true
           type: array
+          description: Equipment ids to return without selling back.
           nullable: true
           items:
             type: string
@@ -5577,6 +5967,7 @@ components:
         givenEquipmentIds:
           uniqueItems: true
           type: array
+          description: "Equipment ids to give away (not returned, not sold back)."
           nullable: true
           items:
             type: string
@@ -5584,12 +5975,15 @@ components:
         sellBackEquipmentIds:
           uniqueItems: true
           type: array
+          description: Equipment ids to return and sell back. Requires companyEntityId
+            and a pickUpDetails.countryCode that supports sellback.
           nullable: true
           items:
             type: string
             format: uuid
         companyEntityId:
           type: string
+          description: Required when sellBackEquipmentIds is non-empty.
           format: uuid
           nullable: true
         lastWorkingDayAt:
@@ -5597,7 +5991,8 @@ components:
           format: date-time
           nullable: true
         pickUpDetails:
-          nullable: true
+          description: Required when offboardingEquipmentIds or sellBackEquipmentIds
+            is non-empty.
           allOf:
           - $ref: "#/components/schemas/PickUpDetailsRequest"
         notes:
@@ -5824,14 +6219,18 @@ components:
     PageOffboardingResponse:
       type: object
       properties:
-        totalElements:
-          type: integer
-          format: int64
         totalPages:
           type: integer
           format: int32
+        totalElements:
+          type: integer
+          format: int64
         pageable:
           $ref: "#/components/schemas/PageableObject"
+        first:
+          type: boolean
+        last:
+          type: boolean
         size:
           type: integer
           format: int32
@@ -5847,10 +6246,6 @@ components:
         numberOfElements:
           type: integer
           format: int32
-        first:
-          type: boolean
-        last:
-          type: boolean
         empty:
           type: boolean
     InvoiceQueryRequest:
@@ -5891,6 +6286,8 @@ components:
         companyEntityIds:
           uniqueItems: true
           type: array
+          description: Must reference existing company entities already belonging
+            to your company.
           nullable: true
           items:
             type: string
@@ -5920,14 +6317,18 @@ components:
     PageInvoiceResponse:
       type: object
       properties:
-        totalElements:
-          type: integer
-          format: int64
         totalPages:
           type: integer
           format: int32
+        totalElements:
+          type: integer
+          format: int64
         pageable:
           $ref: "#/components/schemas/PageableObject"
+        first:
+          type: boolean
+        last:
+          type: boolean
         size:
           type: integer
           format: int32
@@ -5943,10 +6344,6 @@ components:
         numberOfElements:
           type: integer
           format: int32
-        first:
-          type: boolean
-        last:
-          type: boolean
         empty:
           type: boolean
     EquipmentQueryRequest:
@@ -5978,14 +6375,41 @@ components:
           - HEADSET
           - OTHER
           - PHONE
+        modelTypes:
+          uniqueItems: true
+          type: array
+          nullable: true
+          items:
+            type: string
+            enum:
+            - LAPTOP
+            - MONITOR
+            - TABLET
+            - SMARTPHONE
+            - KEYBOARD_AND_MOUSE
+            - CABLES
+            - CHARGER
+            - ACCESSORIES
+            - HEADSET
         tagId:
           type: string
+          description: Must reference an existing tag already belonging to your company.
           format: uuid
           nullable: true
+        excludeTagIds:
+          uniqueItems: true
+          type: array
+          description: Must reference existing tags already belonging to your company.
+          nullable: true
+          items:
+            type: string
+            format: uuid
         employeeOnboarding:
           type: boolean
         countryCode:
           type: string
+          description: "When set, price and additions are populated in the response\
+            \ for that country. Required to sort by estimatedPrice."
           nullable: true
           enum:
           - UNDEFINED
@@ -6266,6 +6690,9 @@ components:
         currency:
           type: object
           properties:
+            numericCode:
+              type: integer
+              format: int32
             context:
               type: object
               properties:
@@ -6278,21 +6705,54 @@ components:
             defaultFractionDigits:
               type: integer
               format: int32
-            numericCode:
-              type: integer
-              format: int32
+          description: Defaults to your company's currency when omitted.
           nullable: true
+        manufacturers:
+          uniqueItems: true
+          type: array
+          nullable: true
+          items:
+            type: string
+        specifications:
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/SpecificationFilterRequest"
+        priceMin:
+          type: number
+          nullable: true
+        priceMax:
+          type: number
+          nullable: true
+        inStockOnly:
+          type: boolean
+    SpecificationFilterRequest:
+      type: object
+      properties:
+        parameterId:
+          type: string
+          format: uuid
+        valueIds:
+          uniqueItems: true
+          type: array
+          items:
+            type: string
+            format: uuid
     PageEquipmentResponse:
       type: object
       properties:
-        totalElements:
-          type: integer
-          format: int64
         totalPages:
           type: integer
           format: int32
+        totalElements:
+          type: integer
+          format: int64
         pageable:
           $ref: "#/components/schemas/PageableObject"
+        first:
+          type: boolean
+        last:
+          type: boolean
         size:
           type: integer
           format: int32
@@ -6308,19 +6768,16 @@ components:
         numberOfElements:
           type: integer
           format: int32
-        first:
-          type: boolean
-        last:
-          type: boolean
         empty:
           type: boolean
     CountryQueryRequest:
-      required:
-      - type
       type: object
       properties:
         type:
           type: string
+          description: "Only PRICING and ALL are usable via this integration API.\
+            \ OFFBOARDING, SELLBACK and WAREHOUSE are restricted to admin roles and\
+            \ always fail for API clients."
           enum:
           - OFFBOARDING
           - SELLBACK
@@ -6332,6 +6789,8 @@ components:
       properties:
         type:
           type: string
+          description: "When omitted, defaults to INTERNAL only. Set to TEQUIPY explicitly\
+            \ to find tequipy warehouse addresses."
           nullable: true
           enum:
           - INTERNAL
@@ -6344,14 +6803,18 @@ components:
     PageCompanyAddressResponse:
       type: object
       properties:
-        totalElements:
-          type: integer
-          format: int64
         totalPages:
           type: integer
           format: int32
+        totalElements:
+          type: integer
+          format: int64
         pageable:
           $ref: "#/components/schemas/PageableObject"
+        first:
+          type: boolean
+        last:
+          type: boolean
         size:
           type: integer
           format: int32
@@ -6367,10 +6830,6 @@ components:
         numberOfElements:
           type: integer
           format: int32
-        first:
-          type: boolean
-        last:
-          type: boolean
         empty:
           type: boolean
     EquipmentCollectionRequest:
@@ -6378,19 +6837,24 @@ components:
       properties:
         userId:
           type: string
+          description: Required unless companyAddressId is set. companyAddressId is
+            not usable via this integration API.
           format: uuid
           nullable: true
         companyAddressId:
           type: string
+          description: Not usable via this integration API — API clients can only
+            create collections for a user (userId).
           format: uuid
           nullable: true
         pickUpDetails:
-          nullable: true
+          description: Always required.
           allOf:
           - $ref: "#/components/schemas/PickUpDetailsRequest"
         collectionEquipmentIds:
           uniqueItems: true
           type: array
+          description: Equipment ids to collect without selling back.
           nullable: true
           items:
             type: string
@@ -6398,16 +6862,22 @@ components:
         sellBackEquipmentIds:
           uniqueItems: true
           type: array
+          description: Equipment ids to collect and sell back. Requires companyEntityId
+            and a pickUpDetails.countryCode that supports sellback.
           nullable: true
           items:
             type: string
             format: uuid
         companyEntityId:
           type: string
+          description: Required when sellBackEquipmentIds is non-empty.
           format: uuid
           nullable: true
         startAt:
           type: string
+          description: "When set to a future date, the collection stays SCHEDULED\
+            \ and the first email to the employee is sent on that date. If omitted\
+            \ or in the past, the collection starts immediately."
           format: date-time
           nullable: true
         notes:
@@ -6656,14 +7126,18 @@ components:
     PageEquipmentCollectionResponse:
       type: object
       properties:
-        totalElements:
-          type: integer
-          format: int64
         totalPages:
           type: integer
           format: int32
+        totalElements:
+          type: integer
+          format: int64
         pageable:
           $ref: "#/components/schemas/PageableObject"
+        first:
+          type: boolean
+        last:
+          type: boolean
         size:
           type: integer
           format: int32
@@ -6679,10 +7153,6 @@ components:
         numberOfElements:
           type: integer
           format: int32
-        first:
-          type: boolean
-        last:
-          type: boolean
         empty:
           type: boolean
     UpdateUserRequest:
@@ -6697,6 +7167,7 @@ components:
         tags:
           uniqueItems: true
           type: array
+          description: Must reference existing tags already belonging to your company.
           nullable: true
           items:
             type: string
@@ -6712,6 +7183,7 @@ components:
           nullable: true
         role:
           type: string
+          description: Only EMPLOYEE and COMPANY_ADMIN are accepted.
           nullable: true
           enum:
           - EMPLOYEE
@@ -6734,10 +7206,15 @@ components:
           nullable: true
         companyAddressId:
           type: string
+          description: Reassigns the equipment to the company's STORAGE user at this
+            address. Must reference an active company address. Mutually exclusive
+            with userId.
           format: uuid
           nullable: true
         userId:
           type: string
+          description: Reassigns the equipment to this user. Must reference an existing
+            user. Mutually exclusive with companyAddressId.
           format: uuid
           nullable: true
         isNew:
@@ -6765,17 +7242,25 @@ components:
           format: uuid
         value:
           type: string
+        usageCount:
+          type: integer
+          format: int64
+          nullable: true
     PageCompanyEntityResponse:
       type: object
       properties:
-        totalElements:
-          type: integer
-          format: int64
         totalPages:
           type: integer
           format: int32
+        totalElements:
+          type: integer
+          format: int64
         pageable:
           $ref: "#/components/schemas/PageableObject"
+        first:
+          type: boolean
+        last:
+          type: boolean
         size:
           type: integer
           format: int32
@@ -6791,10 +7276,6 @@ components:
         numberOfElements:
           type: integer
           format: int32
-        first:
-          type: boolean
-        last:
-          type: boolean
         empty:
           type: boolean
   securitySchemes:
