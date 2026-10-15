@@ -6178,6 +6178,10 @@ components:
           nullable: true
           allOf:
           - $ref: "#/components/schemas/PricingSummaryResponse"
+        equipmentDelivery:
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/EquipmentDeliveryResponse"
     OffboardingQueryRequest:
       type: object
       properties:
@@ -7067,6 +7071,10 @@ components:
           nullable: true
           allOf:
           - $ref: "#/components/schemas/PricingSummaryResponse"
+        equipmentDelivery:
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/EquipmentDeliveryResponse"
     EquipmentCollectionQueryRequest:
       type: object
       properties:
