@@ -20,8 +20,10 @@ tags:
 - name: Equipments
 - name: Company Entities
 - name: Company Addresses
+- name: Customer Companies
 - name: Countries
 - name: Tags
+- name: Simulation
 paths:
   /integration/users:
     post:
@@ -29,9 +31,9 @@ paths:
       - Users
       operationId: createEmployee
       requestBody:
-        description: "`fullName`, `email` and `role` are required. Only `EMPLOYEE`\
-          \ and `COMPANY_ADMIN` are accepted for `role`. `equipmentIds` and `tags`\
-          \ must reference equipment/tags already belonging to your company."
+        description: "`fullName`, `email` and `role` are required. Only `EMPLOYEE`,\
+          \ `COMPANY_ADMIN` and `FINANCE_ADMIN` are accepted for `role`. `equipmentIds`\
+          \ and `tags` must reference equipment/tags already belonging to your company."
         content:
           application/json:
             schema:
@@ -43,6 +45,23 @@ paths:
           content: {}
       x-mint:
         href: /api-reference/users/create-employee
+  /integration/users/{id}/invite/resend:
+    post:
+      tags:
+      - Users
+      operationId: resendPortalInvite
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "204":
+          description: No Content
+      x-mint:
+        href: /api-reference/users/resend-portal-invite
   /integration/users/{id}/archive:
     post:
       tags:
@@ -188,6 +207,134 @@ paths:
                 $ref: "#/components/schemas/UserEquipmentResponse"
       x-mint:
         href: /api-reference/user-equipment/create-user-equipment
+  /integration/tags:
+    get:
+      tags:
+      - Tags
+      description: "The equipment, equipmentsSize, employees, employeesSize, updatedAt\
+        \ and createdAt fields of TagResponse are always null in this response — only\
+        \ id and name are populated."
+      operationId: getTags
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TagResponse"
+      x-mint:
+        href: /api-reference/tags/get-tags
+    post:
+      tags:
+      - Tags
+      operationId: createTag
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTagApiRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/TagResponse"
+      x-mint:
+        href: /api-reference/tags/create-tag
+  /integration/tags/{id}/users:
+    post:
+      tags:
+      - Tags
+      operationId: addUsersToTag
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TagUsersRequest"
+        required: true
+      responses:
+        "204":
+          description: No Content
+      x-mint:
+        href: /api-reference/tags/add-users-to-tag
+    delete:
+      tags:
+      - Tags
+      operationId: deleteUsersFromTag
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TagUsersRequest"
+        required: true
+      responses:
+        "204":
+          description: No Content
+      x-mint:
+        href: /api-reference/tags/delete-users-from-tag
+  /integration/tags/{id}/equipments:
+    post:
+      tags:
+      - Tags
+      operationId: addEquipmentsToTag
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TagEquipmentsRequest"
+        required: true
+      responses:
+        "204":
+          description: No Content
+      x-mint:
+        href: /api-reference/tags/add-equipments-to-tag
+    delete:
+      tags:
+      - Tags
+      operationId: deleteEquipmentsFromTag
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TagEquipmentsRequest"
+        required: true
+      responses:
+        "204":
+          description: No Content
+      x-mint:
+        href: /api-reference/tags/delete-equipments-from-tag
   /integration/repairs:
     post:
       tags:
@@ -208,6 +355,32 @@ paths:
                 $ref: "#/components/schemas/EquipmentRepairResponse"
       x-mint:
         href: /api-reference/repairs/create-repair
+  /integration/repairs/{id}/simulate:
+    post:
+      tags:
+      - Simulation
+      operationId: simulateRepair
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EquipmentRepairSimulationRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/EquipmentRepairResponse"
+      x-mint:
+        href: /api-reference/simulation/simulate-repair
   /integration/repairs/{id}/reject:
     post:
       tags:
@@ -371,6 +544,32 @@ paths:
                 $ref: "#/components/schemas/EquipmentRedeploymentResponse"
       x-mint:
         href: /api-reference/redeployments/create-redeployment
+  /integration/redeployments/{id}/simulate:
+    post:
+      tags:
+      - Simulation
+      operationId: simulateRedeployment
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EquipmentRedeploymentSimulationRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/EquipmentRedeploymentResponse"
+      x-mint:
+        href: /api-reference/simulation/simulate-redeployment
   /integration/redeployments/{id}/cancel:
     post:
       tags:
@@ -467,6 +666,32 @@ paths:
                 $ref: "#/components/schemas/OrderResponse"
       x-mint:
         href: /api-reference/orders/create-order
+  /integration/orders/{id}/simulate:
+    post:
+      tags:
+      - Simulation
+      operationId: simulateOrder
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderSimulationRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/OrderResponse"
+      x-mint:
+        href: /api-reference/simulation/simulate-order
   /integration/orders/{id}/cancel:
     post:
       tags:
@@ -562,6 +787,32 @@ paths:
                 $ref: "#/components/schemas/OffboardingResponse"
       x-mint:
         href: /api-reference/offboardings/create-offboarding
+  /integration/offboardings/{id}/simulate:
+    post:
+      tags:
+      - Simulation
+      operationId: simulateOffboarding
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserOffboardingSimulationRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/OffboardingResponse"
+      x-mint:
+        href: /api-reference/simulation/simulate-offboarding
   /integration/offboardings/{id}/cancel:
     post:
       tags:
@@ -820,6 +1071,32 @@ paths:
                 $ref: "#/components/schemas/EquipmentCollectionResponse"
       x-mint:
         href: /api-reference/collections/create-collection
+  /integration/collections/{id}/simulate:
+    post:
+      tags:
+      - Simulation
+      operationId: simulateCollection
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EquipmentCollectionSimulationRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/EquipmentCollectionResponse"
+      x-mint:
+        href: /api-reference/simulation/simulate-collection
   /integration/collections/{id}/cancel:
     post:
       tags:
@@ -922,8 +1199,8 @@ paths:
           format: uuid
       requestBody:
         description: "All fields are optional; only the ones set are updated. If `role`\
-          \ is set, only `EMPLOYEE` and `COMPANY_ADMIN` are accepted. `tags` must\
-          \ reference tags already belonging to your company."
+          \ is set, only `EMPLOYEE`, `COMPANY_ADMIN` and `FINANCE_ADMIN` are accepted.\
+          \ `tags` must reference tags already belonging to your company."
         content:
           application/json:
             schema:
@@ -985,25 +1262,49 @@ paths:
                 $ref: "#/components/schemas/UserEquipmentResponse"
       x-mint:
         href: /api-reference/user-equipment/update-user-equipment
-  /integration/tags:
-    get:
+  /integration/tags/{id}:
+    delete:
       tags:
       - Tags
-      description: "The equipment, equipmentsSize, employees, employeesSize, updatedAt\
-        \ and createdAt fields of TagResponse are always null in this response — only\
-        \ id and name are populated."
-      operationId: getTags
+      operationId: deleteTag
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "204":
+          description: No Content
+      x-mint:
+        href: /api-reference/tags/delete-tag
+    patch:
+      tags:
+      - Tags
+      operationId: updateTag
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RenameTagRequest"
+        required: true
       responses:
         "200":
           description: OK
           content:
             '*/*':
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/TagResponse"
+                $ref: "#/components/schemas/TagResponse"
       x-mint:
-        href: /api-reference/tags/get-tags
+        href: /api-reference/tags/update-tag
   /integration/specification-parameters/{modelType}:
     get:
       tags:
@@ -1036,6 +1337,26 @@ paths:
                   $ref: "#/components/schemas/SpecificationParameterResponse"
       x-mint:
         href: /api-reference/equipments/list-specification-parameters
+  /integration/reseller-customer-companies:
+    get:
+      tags:
+      - Customer Companies
+      description: "Active customer companies of your company, sorted by name. Use\
+        \ their ids as resellerCustomerCompanyId when creating orders and equipment,\
+        \ and in the resellerCustomerCompanyIds filters. Tequipy Ops add and remove\
+        \ customer companies for you."
+      operationId: getResellerCustomerCompanies
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ResellerCustomerCompanySimpleResponse"
+      x-mint:
+        href: /api-reference/customer-companies/get-reseller-customer-companies
   /integration/repairs/{id}:
     get:
       tags:
@@ -1272,6 +1593,23 @@ paths:
                 $ref: "#/components/schemas/EquipmentCollectionResponse"
       x-mint:
         href: /api-reference/collections/get-collection
+  /integration/users/{id}/company-entity:
+    delete:
+      tags:
+      - Users
+      operationId: deleteCompanyEntity
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "204":
+          description: No Content
+      x-mint:
+        href: /api-reference/users/delete-company-entity
 components:
   schemas:
     CreateEmployeeRequest:
@@ -1306,8 +1644,8 @@ components:
             format: uuid
         role:
           type: string
-          description: Required when creating an employee via POST /integration/users.
-            Only EMPLOYEE and COMPANY_ADMIN are accepted.
+          description: "Required when creating an employee via POST /integration/users.\
+            \ Only EMPLOYEE, COMPANY_ADMIN and FINANCE_ADMIN are accepted."
           nullable: true
           enum:
           - EMPLOYEE
@@ -1318,6 +1656,7 @@ components:
           - API_CLIENT
           - API_CLIENT_READONLY
           - AI_AGENT
+          - FINANCE_ADMIN
         tags:
           uniqueItems: true
           type: array
@@ -1341,6 +1680,12 @@ components:
           - $ref: "#/components/schemas/DeliveryAddressRequest"
         sendToWorkEmail:
           type: boolean
+          nullable: true
+        companyEntityId:
+          type: string
+          description: Must reference an existing company entity already belonging
+            to your company. GET /integration/company-entities lists them.
+          format: uuid
           nullable: true
     CreateUserLicenceRequest:
       type: object
@@ -1713,6 +2058,7 @@ components:
             - API_CLIENT
             - API_CLIENT_READONLY
             - AI_AGENT
+            - FINANCE_ADMIN
         companyId:
           type: string
           format: uuid
@@ -2264,14 +2610,14 @@ components:
     PageableObject:
       type: object
       properties:
-        paged:
-          type: boolean
         pageNumber:
           type: integer
           format: int32
         pageSize:
           type: integer
           format: int32
+        paged:
+          type: boolean
         offset:
           type: integer
           format: int64
@@ -2307,6 +2653,14 @@ components:
           nullable: true
           allOf:
           - $ref: "#/components/schemas/Money"
+    ResellerCustomerCompanySimpleResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
     SortObject:
       type: object
       properties:
@@ -2458,6 +2812,12 @@ components:
           - ASSIGNED
           - NOT_ASSIGNED
           - UNKNOWN
+        resellerCustomerCompany:
+          description: The customer company the equipment is for. Left out for equipment
+            of your own company. Present even when the customer company was deleted
+            after the equipment was created.
+          allOf:
+          - $ref: "#/components/schemas/ResellerCustomerCompanySimpleResponse"
         new:
           type: boolean
     WindowsAutopilotResponse:
@@ -2475,6 +2835,9 @@ components:
           type: string
           nullable: true
         domain:
+          type: string
+          nullable: true
+        adminEmail:
           type: string
           nullable: true
         csvFileUrl:
@@ -2516,6 +2879,22 @@ components:
             - HEADSET
             - OTHER
             - PHONE
+        modelTypes:
+          uniqueItems: true
+          type: array
+          nullable: true
+          items:
+            type: string
+            enum:
+            - LAPTOP
+            - MONITOR
+            - TABLET
+            - SMARTPHONE
+            - KEYBOARD_AND_MOUSE
+            - CABLES
+            - CHARGER
+            - ACCESSORIES
+            - HEADSET
         searchPhrase:
           type: string
           nullable: true
@@ -2846,6 +3225,16 @@ components:
           - NOT_ASSIGNED
           - UNKNOWN
           - NON_APPLE
+        resellerCustomerCompanyIds:
+          uniqueItems: true
+          type: array
+          description: "Optional. Only equipment of these customer companies is returned.\
+            \ Ids of other companies match nothing. Omit, or send an empty list, for\
+            \ all equipment."
+          nullable: true
+          items:
+            type: string
+            format: uuid
         new:
           type: boolean
     PageUserEquipmentResponse:
@@ -3220,7 +3609,6 @@ components:
         modelType:
           type: string
           description: Required.
-          nullable: true
           enum:
           - LAPTOP
           - MONITOR
@@ -3242,6 +3630,13 @@ components:
           nullable: true
           items:
             $ref: "#/components/schemas/CustomAttribute"
+        resellerCustomerCompanyId:
+          type: string
+          description: Optional. The customer company the equipment is for. Must reference
+            a customer company of your company. GET /integration/reseller-customer-companies
+            lists them. Omit for equipment of your own company.
+          format: uuid
+          nullable: true
         serialNumber:
           type: string
           nullable: true
@@ -3295,6 +3690,33 @@ components:
           type: string
           format: date
           nullable: true
+    CreateTagApiRequest:
+      required:
+      - name
+      type: object
+      properties:
+        name:
+          maxLength: 70
+          minLength: 0
+          type: string
+    TagUsersRequest:
+      type: object
+      properties:
+        ids:
+          uniqueItems: true
+          type: array
+          items:
+            type: string
+            format: uuid
+    TagEquipmentsRequest:
+      type: object
+      properties:
+        ids:
+          uniqueItems: true
+          type: array
+          items:
+            type: string
+            format: uuid
     CreateEquipmentRepairRequest:
       type: object
       properties:
@@ -3337,8 +3759,9 @@ components:
           nullable: true
         companyEntityId:
           type: string
-          description: "Optional. When set, a repair invoice is created billed to\
-            \ this entity, which must belong to your company."
+          description: "Optional. The repair invoice is billed to this entity, which\
+            \ must belong to your company. When omitted, your company's services billing\
+            \ entity is used."
           format: uuid
           nullable: true
     PickUpDetailsRequest:
@@ -3652,6 +4075,51 @@ components:
         address:
           type: string
           nullable: true
+    EquipmentRepairSimulationParamsRequest:
+      type: object
+      properties:
+        scheduledAt:
+          type: string
+          format: date-time
+          nullable: true
+        pickedUpAt:
+          type: string
+          format: date-time
+          nullable: true
+        deliveredAt:
+          type: string
+          format: date-time
+          nullable: true
+        diagnosis:
+          type: string
+          nullable: true
+        price:
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/Money"
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+    EquipmentRepairSimulationRequest:
+      type: object
+      properties:
+        action:
+          type: string
+          enum:
+          - INITIATE
+          - SCHEDULE_PICKUP
+          - AGREE_DROPOFF
+          - REJECT_PICKUP
+          - PICK_UP
+          - DELIVER
+          - DIAGNOSE
+          - ADD_PACKAGING_COST
+          - COMPLETE
+        params:
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/EquipmentRepairSimulationParamsRequest"
     EquipmentRepairDecisionRequest:
       type: object
       properties:
@@ -3694,6 +4162,22 @@ components:
             - MAIN_COMPUTER
             - ACCESSORY
             - SWAG
+        modelTypes:
+          uniqueItems: true
+          type: array
+          nullable: true
+          items:
+            type: string
+            enum:
+            - LAPTOP
+            - MONITOR
+            - TABLET
+            - SMARTPHONE
+            - KEYBOARD_AND_MOUSE
+            - CABLES
+            - CHARGER
+            - ACCESSORIES
+            - HEADSET
         createdFrom:
           type: string
           format: date
@@ -4816,6 +5300,54 @@ components:
           enum:
           - AUTOMATIC
           - OPS
+    EquipmentRedeploymentSimulationParamsRequest:
+      type: object
+      properties:
+        deliveryCompany:
+          type: string
+          nullable: true
+        deliveryNumber:
+          type: string
+          nullable: true
+        deliveryUrl:
+          type: string
+          nullable: true
+        estimatedDeliveryDate:
+          type: string
+          format: date
+          nullable: true
+        deliveryFailureReason:
+          type: string
+          nullable: true
+        deliveredAt:
+          type: string
+          format: date-time
+          nullable: true
+        delayReason:
+          type: string
+          nullable: true
+          enum:
+          - COURIER_ISSUES
+          - REMOTE_DELIVERY_ADDRESS
+          - INCOMPLETE_ADDRESS
+          - HOLIDAY_PERIOD
+    EquipmentRedeploymentSimulationRequest:
+      type: object
+      properties:
+        action:
+          type: string
+          enum:
+          - PREPARE
+          - SHIP
+          - OUT_FOR_DELIVERY
+          - DELIVERY_FAILED
+          - DELIVER
+          - SET_DELAY
+          - CLEAR_DELAY
+        params:
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/EquipmentRedeploymentSimulationParamsRequest"
     EquipmentRedeploymentQueryRequest:
       type: object
       properties:
@@ -4923,6 +5455,7 @@ components:
           - COMPANY
           - ONBOARDING
           - TEQUIPY_WAREHOUSE
+          - EMPLOYEE_REQUEST
         startDate:
           type: string
           format: date
@@ -5000,6 +5533,14 @@ components:
           nullable: true
           allOf:
           - $ref: "#/components/schemas/CompanyAddressRequest"
+        resellerCustomerCompanyId:
+          type: string
+          description: "Optional. The customer company the order is for. Must reference\
+            \ an active customer company of your company, otherwise the request fails\
+            \ with 400. GET /integration/reseller-customer-companies lists them. Omit\
+            \ for an order for your own company."
+          format: uuid
+          nullable: true
         paymentMethodType:
           type: string
           enum:
@@ -5063,6 +5604,10 @@ components:
         companyId:
           type: string
           format: uuid
+        resellerCustomerCompanyId:
+          type: string
+          format: uuid
+          nullable: true
         organisationId:
           type: string
         name:
@@ -5088,6 +5633,10 @@ components:
           type: string
         name:
           type: string
+        resellerCustomerCompanyId:
+          type: string
+          format: uuid
+          nullable: true
     CompanyEntityResponse:
       type: object
       properties:
@@ -5377,8 +5926,8 @@ components:
           nullable: true
         state:
           type: string
-          description: CREATED order invoices with an issued (non-cost) document are
-            reported as PAYMENT_PENDING instead.
+          description: CREATED invoices with an issued invoice document are reported
+            as PAYMENT_PENDING instead.
           enum:
           - CREATED
           - PAYMENT_PENDING
@@ -5402,6 +5951,8 @@ components:
           nullable: true
           allOf:
           - $ref: "#/components/schemas/PaymentMethod"
+        readyForProforma:
+          type: boolean
     OrderApproverResponse:
       type: object
       properties:
@@ -5434,6 +5985,7 @@ components:
           - API_CLIENT
           - API_CLIENT_READONLY
           - AI_AGENT
+          - FINANCE_ADMIN
         message:
           type: string
         createdAt:
@@ -5543,7 +6095,6 @@ components:
           - DELIVERY_FAILED
           - OUT_FOR_DELIVERY
           - DECLINED
-          - REJECTED
           - DELIVERED
           - ARCHIVED
           - DELETED
@@ -5556,6 +6107,7 @@ components:
           - COMPANY
           - ONBOARDING
           - TEQUIPY_WAREHOUSE
+          - EMPLOYEE_REQUEST
         deliveryNumber:
           type: string
           nullable: true
@@ -5649,6 +6201,12 @@ components:
         companyEntityName:
           type: string
           nullable: true
+        resellerCustomerCompany:
+          description: The customer company the order is for. Left out for an order
+            for your own company. Present even when the customer company was deleted
+            after the order was placed.
+          allOf:
+          - $ref: "#/components/schemas/ResellerCustomerCompanySimpleResponse"
         createdDate:
           type: string
           format: date-time
@@ -5674,6 +6232,10 @@ components:
           format: date-time
           nullable: true
         completedDate:
+          type: string
+          format: date-time
+          nullable: true
+        approvedAt:
           type: string
           format: date-time
           nullable: true
@@ -5836,6 +6398,48 @@ components:
           bankName:
             type: string
             nullable: true
+    OrderSimulationParamsRequest:
+      type: object
+      properties:
+        companyAddressId:
+          type: string
+          format: uuid
+          nullable: true
+        deliveryCompany:
+          type: string
+          nullable: true
+        deliveryNumber:
+          type: string
+          nullable: true
+        deliveryUrl:
+          type: string
+          nullable: true
+        estimatedDeliveryDate:
+          type: string
+          format: date
+          nullable: true
+        deliveryFailureReason:
+          type: string
+          nullable: true
+        deliveryDate:
+          type: string
+          format: date
+          nullable: true
+    OrderSimulationRequest:
+      type: object
+      properties:
+        action:
+          type: string
+          enum:
+          - PREPARE
+          - SHIP
+          - OUT_FOR_DELIVERY
+          - DELIVERY_FAILED
+          - DELIVER
+        params:
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/OrderSimulationParamsRequest"
     OrderQueryRequest:
       type: object
       properties:
@@ -5877,7 +6481,6 @@ components:
             - DELIVERY_FAILED
             - OUT_FOR_DELIVERY
             - DECLINED
-            - REJECTED
             - DELIVERED
             - ARCHIVED
             - DELETED
@@ -5915,6 +6518,16 @@ components:
           - EMPLOYEE
           - COMPANY_ADDRESS
           - TEQUIPY_WAREHOUSE
+        resellerCustomerCompanyIds:
+          uniqueItems: true
+          type: array
+          description: "Optional. Only orders of these customer companies are returned.\
+            \ Ids of other companies match nothing. Omit, or send an empty list, for\
+            \ all orders."
+          nullable: true
+          items:
+            type: string
+            format: uuid
     PageOrderResponse:
       type: object
       properties:
@@ -6134,6 +6747,14 @@ components:
           type: string
           format: date-time
           nullable: true
+        cancellationReason:
+          type: string
+          nullable: true
+          enum:
+          - LOST_IN_TRANSIT
+          - UNABLE_TO_REACH_EMPLOYEE
+          - CANCELLED_BY_USER
+          - OTHER
         firstContactAt:
           type: string
           format: date-time
@@ -6182,6 +6803,73 @@ components:
           nullable: true
           allOf:
           - $ref: "#/components/schemas/EquipmentDeliveryResponse"
+    UserOffboardingSimulationParamsRequest:
+      type: object
+      properties:
+        courierScheduledAt:
+          type: string
+          format: date-time
+          nullable: true
+        pickedUpAt:
+          type: string
+          format: date-time
+          nullable: true
+        estimatedCompletedAt:
+          type: string
+          format: date-time
+          nullable: true
+        deliveryCompany:
+          type: string
+          nullable: true
+        deliveryNumber:
+          type: string
+          nullable: true
+        deliveryUrl:
+          type: string
+          nullable: true
+        chargerReplacementType:
+          type: string
+          nullable: true
+          enum:
+          - APPLE_CHARGER_USB_C_90_140W
+          - APPLE_CHARGER_USB_C_30_70W
+          - APPLE_CHARGER_USB_C_20W
+          - APPLE_POWER_CORD_USB_C_MAGSAFE_3
+          - APPLE_POWER_CORD_USB_C_USB_C
+          - LENOVO_CHARGER_USB_C_60_100W
+          - LENOVO_CHARGER_USB_C_100_140W
+          - LENOVO_POWER_CORD_USB_C_USB_C
+          - DELL_CHARGER_USB_C_60_100W
+          - DELL_CHARGER_USB_C_100_140W
+          - DELL_POWER_CORD_USB_C_USB_C
+          - HP_CHARGER_USB_C_60_100W
+          - HP_CHARGER_USB_C_100_140W
+          - HP_POWER_CORD_USB_C_USB_C
+    UserOffboardingSimulationRequest:
+      type: object
+      properties:
+        action:
+          type: string
+          enum:
+          - SEND_FIRST_EMAIL
+          - SEND_FIRST_REMINDER
+          - SEND_SECOND_REMINDER
+          - MARK_EMPLOYEE_NOT_RESPONDING
+          - AUTO_CANCEL
+          - SCHEDULE_PICKUP
+          - AGREE_DROPOFF
+          - SEND_MATERIALS
+          - REJECT_PICKUP
+          - REJECT_DROPOFF
+          - MARK_IN_TRANSIT
+          - RECEIVE_AT_WAREHOUSE
+          - ADD_PART_REPLACEMENT_COST
+          - ADD_PACKAGING_COST
+          - COMPLETE
+        params:
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/UserOffboardingSimulationParamsRequest"
     OffboardingQueryRequest:
       type: object
       properties:
@@ -6730,6 +7418,8 @@ components:
           nullable: true
         inStockOnly:
           type: boolean
+        favourite:
+          type: boolean
     SpecificationFilterRequest:
       type: object
       properties:
@@ -7075,6 +7765,73 @@ components:
           nullable: true
           allOf:
           - $ref: "#/components/schemas/EquipmentDeliveryResponse"
+    EquipmentCollectionSimulationParamsRequest:
+      type: object
+      properties:
+        courierScheduledAt:
+          type: string
+          format: date-time
+          nullable: true
+        pickedUpAt:
+          type: string
+          format: date-time
+          nullable: true
+        estimatedCompletedAt:
+          type: string
+          format: date-time
+          nullable: true
+        deliveryCompany:
+          type: string
+          nullable: true
+        deliveryNumber:
+          type: string
+          nullable: true
+        deliveryUrl:
+          type: string
+          nullable: true
+        chargerReplacementType:
+          type: string
+          nullable: true
+          enum:
+          - APPLE_CHARGER_USB_C_90_140W
+          - APPLE_CHARGER_USB_C_30_70W
+          - APPLE_CHARGER_USB_C_20W
+          - APPLE_POWER_CORD_USB_C_MAGSAFE_3
+          - APPLE_POWER_CORD_USB_C_USB_C
+          - LENOVO_CHARGER_USB_C_60_100W
+          - LENOVO_CHARGER_USB_C_100_140W
+          - LENOVO_POWER_CORD_USB_C_USB_C
+          - DELL_CHARGER_USB_C_60_100W
+          - DELL_CHARGER_USB_C_100_140W
+          - DELL_POWER_CORD_USB_C_USB_C
+          - HP_CHARGER_USB_C_60_100W
+          - HP_CHARGER_USB_C_100_140W
+          - HP_POWER_CORD_USB_C_USB_C
+    EquipmentCollectionSimulationRequest:
+      type: object
+      properties:
+        action:
+          type: string
+          enum:
+          - SEND_FIRST_EMAIL
+          - SEND_FIRST_REMINDER
+          - SEND_SECOND_REMINDER
+          - MARK_EMPLOYEE_NOT_RESPONDING
+          - AUTO_CANCEL
+          - SCHEDULE_PICKUP
+          - AGREE_DROPOFF
+          - SEND_MATERIALS
+          - REJECT_PICKUP
+          - REJECT_DROPOFF
+          - MARK_IN_TRANSIT
+          - RECEIVE_AT_WAREHOUSE
+          - ADD_PART_REPLACEMENT_COST
+          - ADD_PACKAGING_COST
+          - COMPLETE
+        params:
+          nullable: true
+          allOf:
+          - $ref: "#/components/schemas/EquipmentCollectionSimulationParamsRequest"
     EquipmentCollectionQueryRequest:
       type: object
       properties:
@@ -7130,6 +7887,9 @@ components:
         createdAt:
           type: string
           format: date
+          nullable: true
+        missingPhone:
+          type: boolean
           nullable: true
     PageEquipmentCollectionResponse:
       type: object
@@ -7191,7 +7951,7 @@ components:
           nullable: true
         role:
           type: string
-          description: Only EMPLOYEE and COMPANY_ADMIN are accepted.
+          description: "Only EMPLOYEE, COMPANY_ADMIN and FINANCE_ADMIN are accepted."
           nullable: true
           enum:
           - EMPLOYEE
@@ -7202,10 +7962,17 @@ components:
           - API_CLIENT
           - API_CLIENT_READONLY
           - AI_AGENT
+          - FINANCE_ADMIN
         address:
           nullable: true
           allOf:
           - $ref: "#/components/schemas/DeliveryAddressRequest"
+        companyEntityId:
+          type: string
+          description: Must reference an existing company entity already belonging
+            to your company. GET /integration/company-entities lists them.
+          format: uuid
+          nullable: true
     UpdateUserEquipmentRequest:
       type: object
       properties:
@@ -7228,6 +7995,15 @@ components:
         isNew:
           type: boolean
           nullable: true
+    RenameTagRequest:
+      required:
+      - name
+      type: object
+      properties:
+        name:
+          maxLength: 70
+          minLength: 0
+          type: string
     SpecificationParameterResponse:
       type: object
       properties:
@@ -7254,6 +8030,13 @@ components:
           type: integer
           format: int64
           nullable: true
+        match:
+          type: string
+          nullable: true
+          enum:
+          - MATCHING
+          - NO_MATCH_FOR_FILTERS
+          - NO_MATCH_IN_COUNTRY
     PageCompanyEntityResponse:
       type: object
       properties:
