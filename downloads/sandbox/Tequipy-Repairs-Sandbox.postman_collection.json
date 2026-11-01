@@ -1,0 +1,1080 @@
+{
+  "info": {
+    "name": "Tequipy Sandbox Repairs",
+    "description": "Dev sandbox repair walkthrough. Requires the repair simulation release, an API_CLIENT token and three active test devices. Creates three repairs and two return redeployments, and sends notifications. Run once in order. Returns stop at RECEIVED; later return simulation is outside this collection. Existing pricing behavior is preserved.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "companyEntityId",
+      "value": ""
+    },
+    {
+      "key": "deviceId1",
+      "value": ""
+    },
+    {
+      "key": "deviceId2",
+      "value": ""
+    },
+    {
+      "key": "deviceId3",
+      "value": ""
+    },
+    {
+      "key": "contactEmail",
+      "value": ""
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (pm.variables.get(\"baseUrl\") !== \"https://dev.backend.tequipy.com/integration\") { throw new Error(\"Use the Tequipy dev sandbox URL.\"); }",
+          "if (!pm.variables.get(\"token\")) { throw new Error(\"Set your sandbox token.\"); }",
+          "if (pm.info.requestName === \"03 Create a scheduled repair\") {",
+          "    [\"companyEntityId\", \"deviceId1\", \"deviceId2\", \"deviceId3\", \"contactEmail\"].forEach(function (key) {",
+          "        if (!pm.variables.get(key)) { throw new Error(\"Set \" + key + \" before running the scenarios.\"); }",
+          "    });",
+          "    if (new Set([pm.variables.get(\"deviceId1\"), pm.variables.get(\"deviceId2\"), pm.variables.get(\"deviceId3\")]).size !== 3) { throw new Error(\"Select three different active devices.\"); }",
+          "    [\"repairId1\", \"repairId2\", \"repairId3\", \"returnEmployeeId1\", \"returnEmployeeId2\", \"redeploymentId1\", \"redeploymentId2\"].forEach(function (key) { pm.collectionVariables.unset(key); });",
+          "    pm.collectionVariables.set(\"runTag\", String(Date.now()));",
+          "    function date(days) { return new Date(Date.now() + days * 86400000).toISOString().slice(0, 19); }",
+          "    pm.collectionVariables.set(\"startAt\", date(30));",
+          "    pm.collectionVariables.set(\"scheduledAt1\", date(1));",
+          "    pm.collectionVariables.set(\"scheduledAt2\", date(2));",
+          "    [\"pickedUpAt\", \"deliveredAt\", \"completedAt\"].forEach(function (key) { pm.collectionVariables.set(key, date(2)); });",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "Find your test data",
+      "item": [
+        {
+          "name": "01 Read company entities",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/company-entities"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 Find active employee equipment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/user-equipments/query?page=0&size=100",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sourceType\": \"EMPLOYEES\",\n  \"states\": [\n    \"ACTIVE\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); }"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Complete a repair after a failed pickup",
+      "item": [
+        {
+          "name": "03 Create a scheduled repair",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/repairs",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userEquipmentId\": \"{{deviceId1}}\",\n  \"companyEntityId\": \"{{companyEntityId}}\",\n  \"requesterEmail\": \"{{contactEmail}}\",\n  \"reason\": \"Broken screen\",\n  \"notes\": \"repairs simulation {{runTag}}\",\n  \"pickUpDetails\": {\n    \"privateEmail\": \"{{contactEmail}}\",\n    \"fullName\": \"Sandbox {{runTag}}\",\n    \"phoneNumber\": \"+49301234567\",\n    \"streetLine1\": \"Friedrichstrasse 123\",\n    \"postalCode\": \"10117\",\n    \"city\": \"Berlin\",\n    \"countryCode\": \"DE\"\n  },\n  \"startAt\": \"{{startAt}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"State SET\", function () { pm.expect(pm.response.json().state).to.eql(\"SET\"); });",
+                  "if (pm.response.code === 200 && pm.response.json().state === \"SET\") { pm.collectionVariables.set(\"repairId1\", pm.response.json().id); } else { pm.execution.setNextRequest(null); }",
+                  "if (pm.response.code !== 200 || pm.response.json().state !== \"SET\") { pm.execution.setNextRequest(null); }",
+                  "if (pm.response.code === 200) { pm.collectionVariables.set(\"returnEmployeeId1\", pm.response.json().user.id); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04 Initiate repair",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/repairs/{{repairId1}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"INITIATE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"State INITIATED\", function () { pm.expect(pm.response.json().state).to.eql(\"INITIATED\"); });",
+                  "if (pm.response.code !== 200 || pm.response.json().state !== \"INITIATED\") { pm.execution.setNextRequest(null); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05 Schedule pickup",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/repairs/{{repairId1}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"SCHEDULE_PICKUP\",\n  \"params\": {\n    \"scheduledAt\": \"{{scheduledAt1}}\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"State SCHEDULED\", function () { pm.expect(pm.response.json().state).to.eql(\"SCHEDULED\"); });",
+                  "if (pm.response.code !== 200 || pm.response.json().state !== \"SCHEDULED\") { pm.execution.setNextRequest(null); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "06 Record failed pickup",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/repairs/{{repairId1}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"REJECT_PICKUP\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"State PICK_UP_REJECTED\", function () { pm.expect(pm.response.json().state).to.eql(\"PICK_UP_REJECTED\"); });",
+                  "if (pm.response.code !== 200 || pm.response.json().state !== \"PICK_UP_REJECTED\") { pm.execution.setNextRequest(null); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "07 Schedule another pickup",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/repairs/{{repairId1}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"SCHEDULE_PICKUP\",\n  \"params\": {\n    \"scheduledAt\": \"{{scheduledAt2}}\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"State SCHEDULED\", function () { pm.expect(pm.response.json().state).to.eql(\"SCHEDULED\"); });",
+                  "if (pm.response.code !== 200 || pm.response.json().state !== \"SCHEDULED\") { pm.execution.setNextRequest(null); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "08 Pick up equipment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/repairs/{{repairId1}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"pick_up\",\n  \"params\": {\n    \"pickedUpAt\": \"{{pickedUpAt}}\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"State PICKED_UP\", function () { pm.expect(pm.response.json().state).to.eql(\"PICKED_UP\"); });",
+                  "if (pm.response.code !== 200 || pm.response.json().state !== \"PICKED_UP\") { pm.execution.setNextRequest(null); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "09 Deliver to service",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/repairs/{{repairId1}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"DELIVER\",\n  \"params\": {\n    \"deliveredAt\": \"{{deliveredAt}}\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"State DELIVERED\", function () { pm.expect(pm.response.json().state).to.eql(\"DELIVERED\"); });",
+                  "if (pm.response.code !== 200 || pm.response.json().state !== \"DELIVERED\") { pm.execution.setNextRequest(null); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "10 Diagnose repair",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/repairs/{{repairId1}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"DIAGNOSE\",\n  \"params\": {\n    \"diagnosis\": \"Broken display\",\n    \"price\": {\n      \"amount\": \"180.00\",\n      \"currency\": \"EUR\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"State DIAGNOSED\", function () { pm.expect(pm.response.json().state).to.eql(\"DIAGNOSED\"); });",
+                  "if (pm.response.code !== 200 || pm.response.json().state !== \"DIAGNOSED\") { pm.execution.setNextRequest(null); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "11 Approve repair",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/repairs/{{repairId1}}/approve",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"decisionComment\": \"Approved in simulation {{runTag}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"State REPAIR_APPROVED\", function () { pm.expect(pm.response.json().state).to.eql(\"REPAIR_APPROVED\"); });",
+                  "if (pm.response.code !== 200 || pm.response.json().state !== \"REPAIR_APPROVED\") { pm.execution.setNextRequest(null); }",
+                  "pm.test(\"Final pricing\", function () { pm.expect(pm.response.json().pricingSummary.state).to.eql(\"FINAL\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "12 Complete repair",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/repairs/{{repairId1}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"COMPLETE\",\n  \"params\": {\n    \"completedAt\": \"{{completedAt}}\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"State COMPLETED\", function () { pm.expect(pm.response.json().state).to.eql(\"COMPLETED\"); });",
+                  "if (pm.response.code !== 200 || pm.response.json().state !== \"COMPLETED\") { pm.execution.setNextRequest(null); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "13 Read completed repair",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/repairs/{{repairId1}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"State COMPLETED\", function () { pm.expect(pm.response.json().state).to.eql(\"COMPLETED\"); });",
+                  "if (pm.response.code !== 200 || pm.response.json().state !== \"COMPLETED\") { pm.execution.setNextRequest(null); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "14 Read equipment ready for return",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/user-equipment/{{deviceId1}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "if (pm.response.code === 200) {",
+                  "    var equipment = pm.response.json();",
+                  "    pm.test(\"Equipment ACTIVE in storage\", function () { pm.expect(equipment.state).to.eql(\"ACTIVE\"); pm.expect(equipment.user.role).to.eql(\"STORAGE\"); pm.expect(equipment.storage.id).to.be.a(\"string\"); });",
+                  "    if (equipment.state !== \"ACTIVE\" || equipment.user.role !== \"STORAGE\" || !equipment.storage || !equipment.storage.id) { pm.execution.setNextRequest(null); }",
+                  "} else { pm.execution.setNextRequest(null); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "14a Create return to the original employee",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/redeployments",
+            "description": "Creates a return from storage. Expected state is RECEIVED, not delivered. Equipment is locked again while the redeployment is pending.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"storageEquipmentIds\": [\n    \"{{deviceId1}}\"\n  ],\n  \"employeeId\": \"{{returnEmployeeId1}}\",\n  \"deliveryAddress\": {\n    \"fullName\": \"Sandbox {{runTag}}\",\n    \"phoneNumber\": \"+49301234567\",\n    \"streetLine1\": \"Friedrichstrasse 123\",\n    \"postalCode\": \"10117\",\n    \"city\": \"Berlin\",\n    \"countryCode\": \"DE\"\n  },\n  \"contactPersonEmail\": \"{{contactEmail}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get(\"returnEmployeeId1\")) { throw new Error(\"Run repair creation first to capture the original employee.\"); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "if (pm.response.code === 200) {",
+                  "    var result = pm.response.json();",
+                  "    pm.test(\"Return RECEIVED for original employee\", function () { pm.expect(result.state).to.eql(\"RECEIVED\"); pm.expect(result.user.id).to.eql(pm.collectionVariables.get(\"returnEmployeeId1\")); });",
+                  "    if (result.state === \"RECEIVED\" && result.user.id === pm.collectionVariables.get(\"returnEmployeeId1\")) { pm.collectionVariables.set(\"redeploymentId1\", result.id); } else { pm.execution.setNextRequest(null); }",
+                  "} else { pm.execution.setNextRequest(null); }"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Reject or cancel a repair",
+      "item": [
+        {
+          "name": "15 Create a drop-off repair",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/repairs",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userEquipmentId\": \"{{deviceId2}}\",\n  \"companyEntityId\": \"{{companyEntityId}}\",\n  \"requesterEmail\": \"{{contactEmail}}\",\n  \"reason\": \"Broken screen\",\n  \"notes\": \"repairs simulation {{runTag}}\",\n  \"pickUpDetails\": {\n    \"privateEmail\": \"{{contactEmail}}\",\n    \"fullName\": \"Sandbox {{runTag}}\",\n    \"phoneNumber\": \"+48123456789\",\n    \"streetLine1\": \"Szewska 1\",\n    \"postalCode\": \"30-000\",\n    \"city\": \"Krakow\",\n    \"countryCode\": \"PL\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"State INITIATED\", function () { pm.expect(pm.response.json().state).to.eql(\"INITIATED\"); });",
+                  "if (pm.response.code === 200 && pm.response.json().state === \"INITIATED\") { pm.collectionVariables.set(\"repairId2\", pm.response.json().id); } else { pm.execution.setNextRequest(null); }",
+                  "if (pm.response.code !== 200 || pm.response.json().state !== \"INITIATED\") { pm.execution.setNextRequest(null); }",
+                  "if (pm.response.code === 200) { pm.collectionVariables.set(\"returnEmployeeId2\", pm.response.json().user.id); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "16 Agree drop-off",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/repairs/{{repairId2}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"AGREE_DROPOFF\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"State DROP_OFF_AGREED\", function () { pm.expect(pm.response.json().state).to.eql(\"DROP_OFF_AGREED\"); });",
+                  "if (pm.response.code !== 200 || pm.response.json().state !== \"DROP_OFF_AGREED\") { pm.execution.setNextRequest(null); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "17 Pick up equipment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/repairs/{{repairId2}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"PICK_UP\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"State PICKED_UP\", function () { pm.expect(pm.response.json().state).to.eql(\"PICKED_UP\"); });",
+                  "if (pm.response.code !== 200 || pm.response.json().state !== \"PICKED_UP\") { pm.execution.setNextRequest(null); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "18 Deliver to service",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/repairs/{{repairId2}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"DELIVER\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"State DELIVERED\", function () { pm.expect(pm.response.json().state).to.eql(\"DELIVERED\"); });",
+                  "if (pm.response.code !== 200 || pm.response.json().state !== \"DELIVERED\") { pm.execution.setNextRequest(null); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "19 Diagnose as not repairable",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/repairs/{{repairId2}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"DIAGNOSE\",\n  \"params\": {\n    \"diagnosis\": \"Not repairable: liquid damage\",\n    \"price\": {\n      \"amount\": \"0.00\",\n      \"currency\": \"EUR\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"State DIAGNOSED\", function () { pm.expect(pm.response.json().state).to.eql(\"DIAGNOSED\"); });",
+                  "if (pm.response.code !== 200 || pm.response.json().state !== \"DIAGNOSED\") { pm.execution.setNextRequest(null); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "20 Reject repair",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/repairs/{{repairId2}}/reject",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"decisionComment\": \"Rejected in simulation {{runTag}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"State REPAIR_REJECTED\", function () { pm.expect(pm.response.json().state).to.eql(\"REPAIR_REJECTED\"); });",
+                  "if (pm.response.code !== 200 || pm.response.json().state !== \"REPAIR_REJECTED\") { pm.execution.setNextRequest(null); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "21 Read equipment ready for return",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/user-equipment/{{deviceId2}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "if (pm.response.code === 200) {",
+                  "    var equipment = pm.response.json();",
+                  "    pm.test(\"Equipment ACTIVE in storage\", function () { pm.expect(equipment.state).to.eql(\"ACTIVE\"); pm.expect(equipment.user.role).to.eql(\"STORAGE\"); pm.expect(equipment.storage.id).to.be.a(\"string\"); });",
+                  "    if (equipment.state !== \"ACTIVE\" || equipment.user.role !== \"STORAGE\" || !equipment.storage || !equipment.storage.id) { pm.execution.setNextRequest(null); }",
+                  "} else { pm.execution.setNextRequest(null); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "21a Create return to the original employee",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/redeployments",
+            "description": "Creates a return from storage. Expected state is RECEIVED, not delivered. Equipment is locked again while the redeployment is pending.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"storageEquipmentIds\": [\n    \"{{deviceId2}}\"\n  ],\n  \"employeeId\": \"{{returnEmployeeId2}}\",\n  \"deliveryAddress\": {\n    \"fullName\": \"Sandbox {{runTag}}\",\n    \"phoneNumber\": \"+48123456789\",\n    \"streetLine1\": \"Szewska 1\",\n    \"postalCode\": \"30-000\",\n    \"city\": \"Krakow\",\n    \"countryCode\": \"PL\"\n  },\n  \"contactPersonEmail\": \"{{contactEmail}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get(\"returnEmployeeId2\")) { throw new Error(\"Run repair creation first to capture the original employee.\"); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "if (pm.response.code === 200) {",
+                  "    var result = pm.response.json();",
+                  "    pm.test(\"Return RECEIVED for original employee\", function () { pm.expect(result.state).to.eql(\"RECEIVED\"); pm.expect(result.user.id).to.eql(pm.collectionVariables.get(\"returnEmployeeId2\")); });",
+                  "    if (result.state === \"RECEIVED\" && result.user.id === pm.collectionVariables.get(\"returnEmployeeId2\")) { pm.collectionVariables.set(\"redeploymentId2\", result.id); } else { pm.execution.setNextRequest(null); }",
+                  "} else { pm.execution.setNextRequest(null); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "22 Create a future repair",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/repairs",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userEquipmentId\": \"{{deviceId3}}\",\n  \"companyEntityId\": \"{{companyEntityId}}\",\n  \"requesterEmail\": \"{{contactEmail}}\",\n  \"reason\": \"Broken screen\",\n  \"notes\": \"repairs simulation {{runTag}}\",\n  \"pickUpDetails\": {\n    \"privateEmail\": \"{{contactEmail}}\",\n    \"fullName\": \"Sandbox {{runTag}}\",\n    \"phoneNumber\": \"+49301234567\",\n    \"streetLine1\": \"Friedrichstrasse 123\",\n    \"postalCode\": \"10117\",\n    \"city\": \"Berlin\",\n    \"countryCode\": \"DE\"\n  },\n  \"startAt\": \"{{startAt}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"State SET\", function () { pm.expect(pm.response.json().state).to.eql(\"SET\"); });",
+                  "if (pm.response.code === 200 && pm.response.json().state === \"SET\") { pm.collectionVariables.set(\"repairId3\", pm.response.json().id); } else { pm.execution.setNextRequest(null); }",
+                  "if (pm.response.code !== 200 || pm.response.json().state !== \"SET\") { pm.execution.setNextRequest(null); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "23 Cancel before pickup",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/repairs/{{repairId3}}/cancel"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"State CANCELLED\", function () { pm.expect(pm.response.json().state).to.eql(\"CANCELLED\"); });",
+                  "if (pm.response.code !== 200 || pm.response.json().state !== \"CANCELLED\") { pm.execution.setNextRequest(null); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "24 Read unlocked equipment",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/user-equipment/{{deviceId3}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"State ACTIVE\", function () { pm.expect(pm.response.json().state).to.eql(\"ACTIVE\"); });",
+                  "if (pm.response.code !== 200 || pm.response.json().state !== \"ACTIVE\") { pm.execution.setNextRequest(null); }"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Check error handling",
+      "item": [
+        {
+          "name": "25 Unknown action",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/repairs/{{repairId1}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"FLY\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.response.to.have.status(400); });",
+                  "if (pm.response.code !== 400) { pm.execution.setNextRequest(null); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "26 Missing repair",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/repairs/REP-NOT-EXISTING/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"INITIATE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", function () { pm.response.to.have.status(404); });",
+                  "if (pm.response.code !== 404) { pm.execution.setNextRequest(null); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "27 Complete an already completed repair",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/repairs/{{repairId1}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"COMPLETE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409\", function () { pm.response.to.have.status(409); });",
+                  "if (pm.response.code !== 409) { pm.execution.setNextRequest(null); }"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

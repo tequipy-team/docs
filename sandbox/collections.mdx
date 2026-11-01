@@ -1,0 +1,177 @@
+---
+title: "Collections"
+description: "Simulate equipment returns, storage and subsequent redeployments."
+---
+
+Start with [Sandbox setup](/sandbox/overview) for access, credentials and execution rules.
+
+[Download collections collection (80 requests)](/downloads/sandbox/Tequipy-Collections-Sandbox.postman_collection.json) · [Download shared environment](/downloads/sandbox/Tequipy-Sandbox.postman_environment.json)
+
+Create sandbox records, move them through operational steps and read the results through the API.
+
+## Before you start
+
+Four different test employees, each with exactly one ACTIVE device, with the employeeId and deviceId pairs matched correctly. A compatible Tequipy warehouse in Poland, configured collection/offboarding prices, STANDARD packaging pricing, approved KYB, a services billing entity, an active billing cycle and a company STORAGE user. Choose a chargerReplacementType appropriate to device 2.
+
+## 1. Set up Postman
+
+Import the collection above and the [shared sandbox environment](/downloads/sandbox/Tequipy-Sandbox.postman_environment.json), then select **Tequipy Sandbox**. Set the local value of `token`, without the Bearer prefix. Leave exported credentials empty. Run folder 1 separately, then fill the collection variables below. Follow pagination when selecting records. Examples use Poland: edit all pickup/delivery addresses consistently if using another supported country.
+
+| Variable | Value |
+| --- | --- |
+| `contactEmail` | An email address you control |
+| `employeeId1`–`employeeId4` | Four different active test employees. |
+| `deviceId1`–`deviceId4` | The one active device owned by each matching employee: device 1 belongs to employee 1, and so on. |
+| `chargerReplacementType` | A supported charger replacement type for device 2, for example `LENOVO_CHARGER_USB_C_60_100W` for a compatible Lenovo device |
+
+Run folders 2–7 once, in order, with one iteration. Stop on a failed assertion. Scripts save record IDs and generate future dates automatically. Date-times use `YYYY-MM-DDTHH:mm:ss`, without a timezone offset. Do not run the folders in parallel.
+
+## Create a request without Postman
+
+Send `POST /collections` with the body below. Replace the IDs, controlled contact
+address and any future timestamps. Use a device and employee that meet the
+prerequisites above.
+
+```json
+{
+  "userId": "<active employee ID>",
+  "pickUpDetails": {
+    "fullName": "Sandbox contact",
+    "streetLine1": "Szewska 1",
+    "postalCode": "30-000",
+    "city": "Krakow",
+    "countryCode": "PL",
+    "phoneNumber": "+48123456789",
+    "privateEmail": "you@example.com"
+  },
+  "collectionEquipmentIds": [
+    "<eligible device ID>"
+  ],
+  "notes": "Sandbox example",
+  "isChargerReplacementAllowed": true,
+  "startAt": "<future date and time, YYYY-MM-DDTHH:mm:ss>"
+}
+```
+
+Save the returned `id`. Then send the actions for the first scenario to
+`POST /collections/{id}/simulate`, reading each response before the next action.
+The expected initial state is `SCHEDULED`.
+
+## 2. Run the scenarios
+
+The Postman collection contains the exact requests and assertions. Run the
+folders in order; the table below explains each scenario and its expected result.
+
+| Folder | Scenario | Expected result |
+| --- | --- | --- |
+| 2 · Pickup, failed attempt and warehouse | Schedule pickup, reject the first attempt, reschedule, add packaging, then mark in transit, receive at the warehouse and complete. | `COMPLETED`; equipment `ACTIVE` in warehouse storage. Cancellation after transit is rejected with `422`. |
+| 3 · Drop-off, materials and replacement cost | Send materials, agree drop-off, record a failure and agree again. Add packaging and part replacement, then transport and complete. | `COMPLETED`; equipment `ACTIVE` in storage and added costs present in `FINAL` pricing. |
+| 4 · No response and automatic cancellation | Send both reminders, mark no response and auto-cancel. | `CANCELLED`; equipment stays with the original employee. |
+| 5 · Cancel before first email | Create a future collection and cancel before the first email. | `CANCELLED`; equipment stays with the original employee. |
+| 6 · Check error handling | Send an unknown action and omit the action. | Expected `400` responses. |
+
+The scenarios inspect API responses and equipment. Requests labelled
+with an expected error pass only when that error is returned. Premature completion
+and invalid transitions are deliberate negative checks, not failed walkthroughs.
+
+Each simulation request sends JSON to `POST /collections/{id}/simulate`. Example (replace the timestamp with a suitable future date):
+
+```json
+{
+  "action": "SCHEDULE_PICKUP",
+  "params": {
+    "courierScheduledAt": "2030-01-15T10:00:00"
+  }
+}
+```
+
+## 3. Action reference
+
+Use the exact action names below. Partner cancellation uses the regular `POST /collections/{id}/cancel` endpoint, not a simulation action.
+
+| Action | Allowed current states | Params |
+| --- | --- | --- |
+| `SEND_FIRST_EMAIL` | SCHEDULED | No params. |
+| `SEND_FIRST_REMINDER` | FIRST_EMAIL_SENT | No params. |
+| `SEND_SECOND_REMINDER` | FIRST_REMINDER_SENT | No params. |
+| `MARK_EMPLOYEE_NOT_RESPONDING` | SECOND_REMINDER_SENT | No params. |
+| `AUTO_CANCEL` | EMPLOYEE_NOT_RESPONDING | No params. |
+| `SCHEDULE_PICKUP` | FIRST_EMAIL_SENT, FIRST_REMINDER_SENT, SECOND_REMINDER_SENT, EMPLOYEE_NOT_RESPONDING, EMPLOYEE_RESPONDED, MATERIALS_SENT, READY_FOR_DROPOFF, PICKUP_FAILED | courierScheduledAt required; uses saved pickup address. |
+| `AGREE_DROPOFF` | FIRST_EMAIL_SENT, FIRST_REMINDER_SENT, SECOND_REMINDER_SENT, EMPLOYEE_NOT_RESPONDING, EMPLOYEE_RESPONDED, MATERIALS_SENT, READY_FOR_PICKUP, DROPOFF_FAILED | No params. |
+| `SEND_MATERIALS` | FIRST_EMAIL_SENT, FIRST_REMINDER_SENT, SECOND_REMINDER_SENT, EMPLOYEE_NOT_RESPONDING, EMPLOYEE_RESPONDED, READY_FOR_PICKUP, READY_FOR_DROPOFF | No params. |
+| `REJECT_PICKUP` | FIRST_EMAIL_SENT, FIRST_REMINDER_SENT, SECOND_REMINDER_SENT, EMPLOYEE_NOT_RESPONDING, EMPLOYEE_RESPONDED, READY_FOR_PICKUP | No params. |
+| `REJECT_DROPOFF` | FIRST_EMAIL_SENT, FIRST_REMINDER_SENT, SECOND_REMINDER_SENT, EMPLOYEE_NOT_RESPONDING, EMPLOYEE_RESPONDED, READY_FOR_DROPOFF | No params. |
+| `MARK_IN_TRANSIT` | EMPLOYEE_NOT_RESPONDING, EMPLOYEE_RESPONDED, MATERIALS_SENT, READY_FOR_PICKUP, READY_FOR_DROPOFF, PICKUP_FAILED, DROPOFF_FAILED | Optional pickedUpAt, estimatedCompletedAt, deliveryCompany, deliveryNumber, deliveryUrl. |
+| `RECEIVE_AT_WAREHOUSE` | DEVICE_IN_TRANSIT | No params. |
+| `ADD_PART_REPLACEMENT_COST` | All states; use before completion in this walkthrough | chargerReplacementType required; use a supported charger replacement type. |
+| `ADD_PACKAGING_COST` | READY_FOR_PICKUP, READY_FOR_DROPOFF, PICKED_UP, DEVICE_IN_TRANSIT, DEVICE_IN_TEQUIPY_WAREHOUSE, COMPLETED | No params; configured STANDARD packaging price. |
+| `COMPLETE` | DEVICE_IN_TEQUIPY_WAREHOUSE | No params; selects a Tequipy warehouse in the pickup country. |
+
+## 4. Read the result
+
+`pricingSummary` remains `ESTIMATED` until `COMPLETED`. It is calculated from
+equipment types, so it may omit a packaging or replacement line even after the
+corresponding cost action succeeds. Verify added charges in the `FINAL` pricing
+summary after completion.
+
+Creates four collections: two COMPLETED and two CANCELLED. Devices 1 and 2 become ACTIVE in company storage at a Tequipy warehouse on COMPLETE; devices 3 and 4 remain with their original employees. Folders 2–7 do not create a redeployment; the additional folder 9 completes two subsequent redeployments.
+
+Read a record with `GET /collections/{id}` or list records with `POST /collections/query?page=0&size=20` and body `{}`. Read a device with `GET /user-equipment/{deviceId}`; query stored devices with `POST /user-equipments/query` and `{"sourceType":"STORAGE"}`.
+
+For a subsequent redeployment, take device 1 or 2 from storage and follow the [redeployments guide](/sandbox/redeployments). Choose an active target employee. The simulation never automatically creates this next request.
+
+## Scope and limitations
+
+A condition report and a linked follow-up repair are not exposed by these actions. Charger and packaging pricing lines are not a condition report. Worker refusal, recycling, warranty, storage billing and sell-back settlement require a separate agreed process. This walkthrough uses returns only, not SELL_BACK or GIVE_AWAY. Partner cancellation is accepted in SCHEDULED, FIRST_EMAIL_SENT, FIRST_REMINDER_SENT, SECOND_REMINDER_SENT, EMPLOYEE_NOT_RESPONDING, EMPLOYEE_RESPONDED, MATERIALS_SENT, READY_FOR_PICKUP, READY_FOR_DROPOFF, PICKUP_FAILED and DROPOFF_FAILED. In any other state, for example DEVICE_IN_TRANSIT, DEVICE_IN_TEQUIPY_WAREHOUSE or COMPLETED, it returns HTTP 422 and the record does not change. Folders 2 and 3 check this.
+
+There is no reset. Re-running creates more records and needs eligible devices again. Background jobs can advance scheduled records when their dates arrive. If a run stops, read the saved record before continuing; do not retry creation blindly. This package does not verify actual email delivery, carrier webhooks, invoice settlement or read-only tokens. The optional second-company check covers one isolation scenario only when a suitable record ID is supplied.
+
+## Additional checks
+
+Run these checks after the main scenarios.
+
+### 7 · Invalid transitions and missing records
+
+1. Reject SEND_FIRST_EMAIL on completed record
+1. Reject SEND_FIRST_REMINDER on completed record
+1. Reject SEND_SECOND_REMINDER on completed record
+1. Reject MARK_EMPLOYEE_NOT_RESPONDING on completed record
+1. Reject AUTO_CANCEL on completed record
+1. Reject SCHEDULE_PICKUP on completed record
+1. Reject AGREE_DROPOFF on completed record
+1. Reject SEND_MATERIALS on completed record
+1. Reject REJECT_PICKUP on completed record
+1. Reject REJECT_DROPOFF on completed record
+1. Reject MARK_IN_TRANSIT on completed record
+1. Reject RECEIVE_AT_WAREHOUSE on completed record
+1. Reject COMPLETE on completed record
+1. Missing record returns 404
+
+### 8 · Optional second-company isolation check
+
+1. Other company record returns 404
+
+### 9 · Collection to storage to delivered redeployment
+
+1. Create return to original employee
+1. PREPARE — PREPARING
+1. SHIP — SENT
+1. OUT_FOR_DELIVERY — OUT_FOR_DELIVERY
+1. DELIVER — DELIVERED
+1. Confirm device delivered to expected employee
+1. Create return to new employee
+1. PREPARE — PREPARING
+1. SHIP — SENT
+1. OUT_FOR_DELIVERY — OUT_FOR_DELIVERY
+1. DELIVER — DELIVERED
+1. Confirm device delivered to expected employee
+
+Folder 8 needs otherCompanyRecordId from a different sandbox company; leave it blank to skip explicitly. These requests check that the current token cannot access that record.
+
+For folder 9 set newEmployeeId to an active employee different from employeeId1–4. After folder 9, devices 1 and 2 are ACTIVE with their target employees, not in storage. The storage query checks require a small sandbox with at most 3000 stored devices; a larger result fails rather than silently ignoring later pages.
+
+`EMPLOYEE_RESPONDED` is also accepted by the actions listed in the table. These collections do not simulate the employee submitting return details.
+
+Folder 9 is optional and must follow folders 2–7 for the same records. Set `newEmployeeId` before starting it; skip it when you want devices 1 and 2 to remain available in storage. Folder 8 is a separate optional isolation check.
+
+For failed requests, see [Sandbox troubleshooting](/sandbox/troubleshooting).

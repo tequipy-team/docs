@@ -1,0 +1,141 @@
+---
+title: "Integration questions"
+description: "Cancellation, stock, addresses, repair returns, retries and billing."
+---
+
+These answers describe the current Integration API. For reproducible dev
+walkthroughs, use the five [sandbox guides](/sandbox/overview#choose-a-workflow).
+
+## 1. When can I cancel, and what happens to charges?
+
+Use the regular `POST /{resource}/{id}/cancel` endpoint.
+
+| Resource | States accepting partner cancellation | Result |
+| --- | --- | --- |
+| Orders | `ONBOARDING_SET`, `APPROVAL_PENDING`, `RECEIVED`; approval permissions apply in `APPROVAL_PENDING`. | `DECLINED` |
+| Repairs | `SET`, `INITIATED` | `CANCELLED` |
+| Collections | `SCHEDULED`, contact/reminder states, `EMPLOYEE_RESPONDED`, `EMPLOYEE_NOT_RESPONDING`, `MATERIALS_SENT`, `READY_FOR_PICKUP`, `READY_FOR_DROPOFF`, `PICKUP_FAILED`, `DROPOFF_FAILED` | `CANCELLED` |
+| Offboardings | `SCHEDULED` | `CANCELLED` |
+| Redeployments | `RECEIVED`, `PREPARING` | `DECLINED` |
+
+State eligibility does not override invoicing or other business validation.
+Cancellation is not a promise of a refund or zero charges for work already done.
+Ask your Tequipy contact to confirm any outstanding charges and the outcome of a
+manual cancellation. See [cancellation errors](/sandbox/troubleshooting#cancellation-differs-between-resources).
+
+## 2. What happens when an ordered item is out of stock?
+
+Tequipy operations manages sourcing and can mark an order as delayed with reason
+`AWAITING_STOCK`. Delay is a flag on the order; it does not replace its lifecycle
+state. There is no automatic substitution of the ordered item. Tequipy coordinates
+alternatives or cancellation with you when sourcing cannot proceed.
+
+The current order simulation supports only `PREPARE`, `SHIP`, `OUT_FOR_DELIVERY`,
+`DELIVERY_FAILED` and `DELIVER`. It does **not** expose `SET_DELAY`, `CLEAR_DELAY`
+or a transition to `AWAITING_CTO_ORDER`. Ask your Tequipy contact to prepare an
+order if you need to test these operational conditions. Redeployments have their
+own [delay actions](/sandbox/redeployments#3-action-reference), with different reasons.
+
+## 3. Can equipment be delivered to or collected from a company address?
+
+**Delivery:** create a company address with `POST /company-addresses` or discover
+existing ones with `POST /company-addresses/query`. Use the returned `id` as
+`companyAddressId` in a supported order or redeployment request. Follow the selected
+request schema: an address ID does not remove other required fields such as a
+redeployment's `deliveryAddress`.
+
+**Collection:** the current Integration API allows an `API_CLIENT` to create a
+collection only for a user. It rejects `companyAddressId`, even though that field
+exists in the shared request model. Coordinate collection from a company address
+with Tequipy operations. For a user collection, provide the user's actual pickup
+location in `pickUpDetails`.
+
+Repair requests also use `pickUpDetails` rather than `companyAddressId`. Keep
+country and contact details consistent with the physical location and service
+configuration.
+
+## 4. What happens after a failed pickup?
+
+Continue the same service request. A repair enters `PICK_UP_REJECTED`; a collection
+or offboarding enters `PICKUP_FAILED`. Tequipy operations coordinates another
+attempt. On dev, use `SCHEDULE_PICKUP` with a new timestamp, then continue that
+record. Do not create a duplicate request to reschedule it.
+
+A failed attempt does not define a universal fee in the Integration API. Confirm
+any additional charge with your Tequipy contact. A refused handover also needs
+manual coordination; it is not proof that the service was cancelled.
+
+## 5. What if I reject a repair while the device is in a warehouse?
+
+Reject the quote through `POST /repairs/{id}/reject` after diagnosis. The repair
+becomes `REPAIR_REJECTED`. Agree with Tequipy whether the device should be returned,
+kept in storage or handled through another agreed process.
+
+Return transport is a separate redeployment, with separate pricing. It is not
+created automatically and has no repair-link field. The sandbox repair guide
+shows [creating and completing that return](/sandbox/repairs#4-approve-and-read-the-result).
+Do not assume storage is free or automatically waived because the repair was
+rejected; confirm applicable storage terms and charges with your Tequipy contact.
+
+## 6. Can a device be redeployed to the same employee?
+
+Yes. Once the device is `ACTIVE` in eligible Tequipy storage and the employee is
+active, use that employee's ID in a new redeployment. The target can also be another
+active employee. Shipping changes ownership/location; delivery makes the device
+`ACTIVE` for its recipient. The [collection guide](/sandbox/collections) includes
+both same-employee and new-employee return scenarios.
+
+An offboarded employee must be active again before receiving a redeployment. Do
+not create a second redeployment for a device already locked by a pending one.
+
+## 7. Are create requests idempotent? How should retries work?
+
+The API does not currently support idempotency keys or guaranteed duplicate
+suppression. An `Idempotency-Key` header does not provide that guarantee. Store
+each returned ID and use it to read and advance the existing record.
+
+After a timeout, reconcile existing records before retrying. If the response ID
+was lost and you cannot determine whether creation succeeded, contact Tequipy
+rather than repeatedly creating requests. Queries are paginated. The order query
+supports IDs and creation-date filters; it does not offer an `updatedSince` filter.
+
+## 8. Where are the states and allowed transitions documented?
+
+See [State diagrams](/sandbox/state-diagrams) for all five domains, terminal
+states, shortcuts and the distinction between partner actions, Tequipy operations
+and automation. Each workflow guide has a narrower simulation action table with
+exact allowed states and parameters. A domain transition does not imply an
+Integration API endpoint exists for it.
+
+## 9. Which charges appear on invoices, and when?
+
+A price shown on a request and an issued invoice are separate events. Service
+charges are accumulated into a billing cycle; invoice generation processes expired
+cycles. The standard cycle ends on the last day of the month. Do not interpret a
+completed request or a `FINAL` pricing summary as confirmation of payment.
+
+| Charge item | Service invoice category |
+| --- | --- |
+| `OFFBOARDING`, `EQUIPMENT_COLLECTION`, `REPAIRED_EQUIPMENT_COLLECTION`, `REDEPLOYMENT` | `LOGISTICS` |
+| `EQUIPMENT_PACKAGING`, `PART_REPLACEMENT_SERVICE`, `EQUIPMENT_WIPE_AND_CLEAN`, `EXPORT_FEE` | `LOGISTICS` |
+| `EQUIPMENT_REPAIR` | `REPAIR` |
+| `STORAGE` | `STORAGE` |
+| `EQUIPMENT_PRECONFIGURATION` | `PRECONFIGURATION` |
+
+For repairs, collection/logistics pricing is estimated before diagnosis. The
+technician's repair quote is supplied after the device reaches the warehouse.
+The partner makes one decision after diagnosis, through approve or reject; the
+partner does not set the production technician quote. The repair's pricing summary
+becomes `FINAL` after that decision. A return redeployment is priced separately
+when requested. Collections remain `ESTIMATED` until completion; optional charges
+must be checked in the final summary, as explained in the [collection guide](/sandbox/collections#4-read-the-result).
+
+Sandbox runs can create billing entries, but do not verify issued invoices,
+settlement, storage waivers or refund policy. Confirm commercial terms with Tequipy.
+
+## 10. Where can I run simulations?
+
+On **dev**, at `https://dev.backend.tequipy.com/integration`, using a sandbox
+company and read & write API token. These guides do not require a separate staging
+environment. Simulation endpoints are disabled in production. See the
+[Simulation API](/sandbox/simulation-api) for the request and error contract.

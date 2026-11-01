@@ -1,0 +1,134 @@
+---
+title: "Offboardings"
+description: "Simulate employee offboarding and the return of their equipment."
+---
+
+Start with [Sandbox setup](/sandbox/overview) for access, credentials and execution rules.
+
+[Download offboardings collection (44 requests)](/downloads/sandbox/Tequipy-Offboardings-Sandbox.postman_collection.json) · [Download shared environment](/downloads/sandbox/Tequipy-Sandbox.postman_environment.json)
+
+Create sandbox records, move them through operational steps and read the results through the API.
+
+## Before you start
+
+Four different test employees, each with exactly one ACTIVE device, with the employeeId and deviceId pairs matched correctly. A compatible Tequipy warehouse in Poland, configured collection/offboarding prices, STANDARD packaging pricing, approved KYB, a services billing entity, an active billing cycle and a company STORAGE user. Choose a chargerReplacementType appropriate to device 2. Offboarding covers every ACTIVE device belonging to the employee. These examples assume exactly one; do not use real employees. Completion also offboards the employee. Pick a different active employee when redeploying the returned device.
+
+## 1. Set up Postman
+
+Import the collection above and the [shared sandbox environment](/downloads/sandbox/Tequipy-Sandbox.postman_environment.json), then select **Tequipy Sandbox**. Set the local value of `token`, without the Bearer prefix. Leave exported credentials empty. Run folder 1 separately, then fill the collection variables below. Follow pagination when selecting records. Examples use Poland: edit all pickup/delivery addresses consistently if using another supported country.
+
+| Variable | Value |
+| --- | --- |
+| `contactEmail` | An email address you control |
+| `employeeId1`–`employeeId4` | Four different active test employees. |
+| `deviceId1`–`deviceId4` | The one active device owned by each matching employee: device 1 belongs to employee 1, and so on. |
+| `chargerReplacementType` | A supported charger replacement type for device 2, for example `LENOVO_CHARGER_USB_C_60_100W` for a compatible Lenovo device |
+
+Run folders 2–6 once, in order, with one iteration. Stop on a failed assertion. Scripts save record IDs and generate future dates automatically. Date-times use `YYYY-MM-DDTHH:mm:ss`, without a timezone offset. Do not run the folders in parallel.
+
+## Create a request without Postman
+
+Send `POST /offboardings` with the body below. Replace the IDs, controlled contact
+address and any future timestamps. Use a device and employee that meet the
+prerequisites above.
+
+```json
+{
+  "userId": "<active employee ID>",
+  "pickUpDetails": {
+    "fullName": "Sandbox contact",
+    "streetLine1": "Szewska 1",
+    "postalCode": "30-000",
+    "city": "Krakow",
+    "countryCode": "PL",
+    "phoneNumber": "+48123456789",
+    "privateEmail": "you@example.com"
+  },
+  "offboardingEquipmentIds": [
+    "<eligible device ID>"
+  ],
+  "notes": "Sandbox example",
+  "isChargerReplacementAllowed": true,
+  "lastWorkingDayAt": "<future date and time, YYYY-MM-DDTHH:mm:ss>",
+  "firstContactAt": "<future date and time, YYYY-MM-DDTHH:mm:ss>",
+  "givenEquipmentIds": [],
+  "sellBackEquipmentIds": []
+}
+```
+
+Save the returned `id`. Then send the actions for the first scenario to
+`POST /offboardings/{id}/simulate`, reading each response before the next action.
+The expected initial state is `SCHEDULED`.
+
+## 2. Run the scenarios
+
+The Postman collection contains the exact requests and assertions. Run the
+folders in order; the table below explains each scenario and its expected result.
+
+| Folder | Scenario | Expected result |
+| --- | --- | --- |
+| 2 · Pickup, failed attempt and warehouse | Schedule pickup, reject the attempt, reschedule, add packaging, then transport and complete. | `COMPLETED`; employee `OFFBOARDED`, returned equipment `ACTIVE` in warehouse storage. |
+| 3 · Drop-off, materials and replacement cost | Send materials, agree drop-off, reject and agree again. Add packaging and replacement, then transport and complete. | `COMPLETED`; employee `OFFBOARDED`, returned equipment in storage. |
+| 4 · No response and automatic cancellation | Send reminders, mark no response and auto-cancel. | `CANCELLED`; equipment stays with the employee. |
+| 5 · Cancel before first email | Create a future offboarding and cancel before first contact. | `CANCELLED`; equipment stays with the employee. |
+| 6 · Check error handling | Send an unknown action and omit the action. | Expected `400` responses. |
+
+The scenarios inspect API responses and equipment. Requests labelled
+with an expected error pass only when that error is returned. Premature completion
+and invalid transitions are deliberate negative checks, not failed walkthroughs.
+
+Each simulation request sends JSON to `POST /offboardings/{id}/simulate`. Example (replace the timestamp with a suitable future date):
+
+```json
+{
+  "action": "SCHEDULE_PICKUP",
+  "params": {
+    "courierScheduledAt": "2030-01-15T10:00:00"
+  }
+}
+```
+
+## 3. Action reference
+
+Use the exact action names below. Partner cancellation uses the regular `POST /offboardings/{id}/cancel` endpoint, not a simulation action.
+
+| Action | Allowed current states | Params |
+| --- | --- | --- |
+| `SEND_FIRST_EMAIL` | SCHEDULED | No params. |
+| `SEND_FIRST_REMINDER` | FIRST_EMAIL_SENT | No params. |
+| `SEND_SECOND_REMINDER` | FIRST_REMINDER_SENT | No params. |
+| `MARK_EMPLOYEE_NOT_RESPONDING` | SECOND_REMINDER_SENT | No params. |
+| `AUTO_CANCEL` | EMPLOYEE_NOT_RESPONDING | No params. |
+| `SCHEDULE_PICKUP` | FIRST_EMAIL_SENT, FIRST_REMINDER_SENT, SECOND_REMINDER_SENT, EMPLOYEE_NOT_RESPONDING, EMPLOYEE_RESPONDED, MATERIALS_SENT, READY_FOR_DROPOFF, PICKUP_FAILED | courierScheduledAt required; uses saved pickup address. |
+| `AGREE_DROPOFF` | FIRST_EMAIL_SENT, FIRST_REMINDER_SENT, SECOND_REMINDER_SENT, EMPLOYEE_NOT_RESPONDING, EMPLOYEE_RESPONDED, MATERIALS_SENT, READY_FOR_PICKUP, DROPOFF_FAILED | No params. |
+| `SEND_MATERIALS` | FIRST_EMAIL_SENT, FIRST_REMINDER_SENT, SECOND_REMINDER_SENT, EMPLOYEE_NOT_RESPONDING, EMPLOYEE_RESPONDED, READY_FOR_PICKUP, READY_FOR_DROPOFF | No params. |
+| `REJECT_PICKUP` | FIRST_EMAIL_SENT, FIRST_REMINDER_SENT, SECOND_REMINDER_SENT, EMPLOYEE_NOT_RESPONDING, EMPLOYEE_RESPONDED, READY_FOR_PICKUP | No params. |
+| `REJECT_DROPOFF` | FIRST_EMAIL_SENT, FIRST_REMINDER_SENT, SECOND_REMINDER_SENT, EMPLOYEE_NOT_RESPONDING, EMPLOYEE_RESPONDED, READY_FOR_DROPOFF | No params. |
+| `MARK_IN_TRANSIT` | EMPLOYEE_NOT_RESPONDING, EMPLOYEE_RESPONDED, MATERIALS_SENT, READY_FOR_PICKUP, READY_FOR_DROPOFF, PICKUP_FAILED, DROPOFF_FAILED | Optional pickedUpAt, estimatedCompletedAt, deliveryCompany, deliveryNumber, deliveryUrl. |
+| `RECEIVE_AT_WAREHOUSE` | DEVICE_IN_TRANSIT | No params. |
+| `ADD_PART_REPLACEMENT_COST` | All states; use before completion in this walkthrough | chargerReplacementType required; use a supported charger replacement type. |
+| `ADD_PACKAGING_COST` | READY_FOR_PICKUP, READY_FOR_DROPOFF, PICKED_UP, DEVICE_IN_TRANSIT, DEVICE_IN_TEQUIPY_WAREHOUSE, COMPLETED | No params; configured STANDARD packaging price. |
+| `COMPLETE` | DEVICE_IN_TEQUIPY_WAREHOUSE | No params; selects a Tequipy warehouse in the pickup country. |
+
+## 4. Read the result
+
+`pricingSummary` remains `ESTIMATED` until `COMPLETED`. It is calculated from
+equipment types, so it may omit a packaging or replacement line even after the
+corresponding cost action succeeds. Verify added charges in the `FINAL` pricing
+summary after completion.
+
+Creates four offboardings: two COMPLETED and two CANCELLED. Devices 1 and 2 become ACTIVE in company storage at a Tequipy warehouse on COMPLETE; devices 3 and 4 remain with their original employees. No redeployment is created by this collection.
+
+Read a record with `GET /offboardings/{id}` or list records with `POST /offboardings/query?page=0&size=20` and body `{}`. Read a device with `GET /user-equipment/{deviceId}`; query stored devices with `POST /user-equipments/query` and `{"sourceType":"STORAGE"}`.
+
+For a subsequent redeployment, take device 1 or 2 from storage and follow the [redeployments guide](/sandbox/redeployments). Choose an active target employee. The simulation never automatically creates this next request.
+
+## Scope and limitations
+
+A condition report and a linked follow-up repair are not exposed by these actions. Charger and packaging pricing lines are not a condition report. Worker refusal, recycling, warranty, storage billing and sell-back settlement require a separate agreed process. This walkthrough uses returns only, not SELL_BACK or GIVE_AWAY. Partner cancellation is allowed only in SCHEDULED, even if pickup has not happened. In any other state it returns HTTP 400 and the record does not change. Folder 2 checks this after the first email.
+
+There is no reset. Re-running creates more records and needs eligible devices again. Background jobs can advance scheduled records when their dates arrive. If a run stops, read the saved record before continuing; do not retry creation blindly. This package does not verify actual email delivery, carrier webhooks, invoice settlement, cross-company authorization or read-only tokens.
+
+`EMPLOYEE_RESPONDED` is also accepted by the actions listed in the table. These collections do not simulate the employee submitting return details.
+
+For failed requests, see [Sandbox troubleshooting](/sandbox/troubleshooting).
