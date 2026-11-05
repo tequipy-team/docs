@@ -1,0 +1,132 @@
+---
+title: "Overview"
+description: "Test your Tequipy integration through complete order and equipment service workflows."
+---
+
+Use the sandbox to create test requests, simulate operational steps and read the
+results through the Integration API. Simulation lets you advance a request without
+waiting for an actual shipment or service appointment.
+
+## Get access
+
+Ask your Tequipy contact for a sandbox company, test data and a **read & write API
+token**. Include the countries and workflows you need to test, a company name and
+an administrator email address you control. Tequipy prepares the environment and
+provides your company ID, access details and eligible employee, device and address IDs. If API Access is enabled for your administrator, generate a token in
+**Settings → API Access** in the sandbox application.
+
+Use this base URL for every request in these guides:
+
+```text
+https://dev.backend.tequipy.com/integration
+```
+
+```http
+Authorization: Bearer <your sandbox API token>
+Content-Type: application/json
+```
+
+<Warning>
+  Use test employees and email addresses you control. Simulation changes sandbox
+  records, can create billing entries and can send real notifications to employees,
+  company recipients and operational teams. Records remain after the run. There is
+  no reset action.
+</Warning>
+
+The simulation endpoints are available in sandbox environments and are disabled
+in production. Regular create, read, cancel and repair decision endpoints are
+also used by these walkthroughs; always keep the sandbox base URL selected.
+
+Read the [Simulation API contract](/sandbox/simulation-api), consult the
+[state diagrams](/sandbox/state-diagrams), or review [integration questions](/sandbox/questions)
+and [manual processes](/sandbox/manual-processes).
+
+## Choose a workflow
+
+| Guide | Test data to prepare | Result of a complete walkthrough |
+| --- | --- | --- |
+| [Orders](/sandbox/orders) | Company entity, active test employee, available catalogue item for the delivery country; examples use AE | Three orders: two `DELIVERED`, one `DECLINED` |
+| [Repairs](/sandbox/repairs) | Company entity and three distinct active devices assigned to test employees; examples use DE and PL | Three repairs: `COMPLETED`, `REPAIR_REJECTED`, `CANCELLED`; two return redeployments in `RECEIVED` |
+| [Collections](/sandbox/collections) | Four test employees, each with one active device; examples use PL | Four collections: two `COMPLETED`, two `CANCELLED`; optional folder 9 delivers two subsequent redeployments |
+| [Offboardings](/sandbox/offboardings) | Four test employees, each with one active device; examples use PL | Four offboardings: two `COMPLETED`, two `CANCELLED`; returned devices are in storage |
+| [Redeployments](/sandbox/redeployments) | Four active devices in Tequipy storage, two active employees, an active company address; examples use PL | Four redeployments: three `DELIVERED`, one `DECLINED` |
+
+For repairs, collections, offboardings and redeployments, ask your Tequipy contact
+to prepare the required service pricing, compatible warehouses, approved KYB,
+services billing entity, active billing cycle and company `STORAGE` user. Packaging
+steps need a configured `STANDARD` packaging price. Keep countries in test data,
+prices and addresses consistent.
+
+Treat each walkthrough as a separate run. Collections and repairs can move devices
+into storage; redeployment locks them while a return is pending. Shipping assigns
+them to the recipient or target company address; delivery makes them `ACTIVE`.
+Offboarding also changes the employee’s status.
+Recheck eligibility before reusing a device or employee in another walkthrough.
+
+## Set up Postman once
+
+1. [Download and import the shared sandbox environment](/downloads/sandbox/Tequipy-Sandbox.postman_environment.json).
+2. Select **Tequipy Sandbox** and enter the local value of `token`, without the
+   `Bearer` prefix. Keep the shared or exported token empty.
+3. Import the collection linked from the workflow you want to test. Set inputs in
+   that collection’s variables; the shared environment holds only `baseUrl` and `token`.
+4. Run its discovery requests first. Follow pagination and select eligible records
+   belonging to your sandbox company. Set the variables listed in the guide.
+5. Run the scenario requests in the documented order, with **one iteration** and
+   no parallel execution. Stop and inspect the response if an assertion fails.
+
+The five collections contain 231 requests in total, including discovery, expected
+error responses and optional checks. They are separate downloads so you can run
+only the workflow for which your company has suitable data.
+
+## How simulation requests work
+
+Create a record through its regular Integration API endpoint and save the returned
+`id`. Send actions to the simulation endpoint for that record:
+
+| Resource | Simulation endpoint |
+| --- | --- |
+| Order | `POST /orders/{id}/simulate` |
+| Repair | `POST /repairs/{id}/simulate` |
+| Collection | `POST /collections/{id}/simulate` |
+| Offboarding | `POST /offboardings/{id}/simulate` |
+| Redeployment | `POST /redeployments/{id}/simulate` |
+
+For example, prepare an order that is in `RECEIVED`:
+
+```json
+{"action":"PREPARE"}
+```
+
+A successful simulation returns HTTP 200 and the updated record. Allowed actions
+depend on the current state. HTTP 409 means the action is unavailable in that
+state; the response message lists allowed actions. Use the action table in the
+relevant guide because parameter names differ between workflows.
+
+Use `YYYY-MM-DD` for date fields. The date-time fields used by these walkthroughs
+take `YYYY-MM-DDTHH:mm:ss`, without `Z` or a timezone offset. Replace sample dates
+with suitable dates for your run; Postman generates dates automatically.
+Background jobs can advance scheduled records when their dates arrive.
+
+## Continue a return journey
+
+After completing a collection or offboarding, inspect the device through
+`GET /user-equipment/{deviceId}`. A returned device becomes `ACTIVE` in company
+storage at a Tequipy warehouse. Create a separate redeployment to send it to an
+active employee; completing a collection or offboarding does not create one automatically.
+
+The repair collection already creates two return redeployments and saves their IDs.
+Use those existing IDs to [simulate the return delivery](/sandbox/redeployments#continue-an-existing-repair-return).
+Creating another redeployment for the same locked device will fail.
+
+## What a run verifies
+
+The collections check API responses and selected state, ownership and validation
+rules. They do not prove carrier delivery, email receipt, invoice settlement,
+refunds or every authorization rule. The optional isolation folders in collections
+and redeployments need a record ID supplied for a second sandbox company; without
+it, those requests are explicitly skipped.
+
+After a timeout, read the saved record before retrying. Repeating creation can
+create additional records. See [troubleshooting](/sandbox/troubleshooting) for errors
+and the details to share with your Tequipy contact.

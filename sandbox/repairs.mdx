@@ -1,0 +1,135 @@
+---
+title: "Repairs"
+description: "Simulate equipment repairs, quote decisions and return requests."
+---
+
+Start with [Sandbox setup](/sandbox/overview) for access, credentials and execution rules.
+
+[Download repairs collection (29 requests)](/downloads/sandbox/Tequipy-Repairs-Sandbox.postman_collection.json) · [Download shared environment](/downloads/sandbox/Tequipy-Sandbox.postman_environment.json)
+
+Use the Tequipy dev sandbox to create a repair, simulate pickup and diagnosis, approve or reject the quote, and read each state through the API.
+
+## Before you start
+
+You need a sandbox account, a read-write API token and three different pieces of active equipment assigned to test employees. Your Tequipy contact must prepare a company with approved KYB, an active billing cycle, a services billing entity and a STORAGE user, plus a compatible Tequipy warehouse and configured service prices for the test countries. Standard packaging pricing is needed if you try ADD_PACKAGING_COST.
+
+Simulation updates sandbox records, creates billing records and can send real email notifications, including copies to operational teams and configured company recipients. Use a test company and contact addresses you control. The simulation endpoint is unavailable in production. This walkthrough creates return redeployments in RECEIVED state; later return transport and warranty scenarios are outside its scope. Existing service pricing and billing behavior is preserved.
+
+## 1. Set up Postman
+
+Import the [Postman collection](/downloads/sandbox/Tequipy-Repairs-Sandbox.postman_collection.json) and [environment](/downloads/sandbox/Tequipy-Sandbox.postman_environment.json). Select **Tequipy Sandbox**. Enter your token as the local value of `token`, without the Bearer prefix; leave the exported value empty.
+
+Send requests 01–02, then fill in these collection variables from the responses:
+
+| Variable | Value |
+| --- | --- |
+| companyEntityId | Your company entity ID from request 01. |
+| deviceId1, deviceId2, deviceId3 | Three different equipment IDs from request 02, all ACTIVE and assigned to employees. Read further pages if needed. |
+| contactEmail | An email address you control, used as requesterEmail and pickUpDetails.privateEmail. |
+
+Run all 29 requests in order with one iteration, including requests 14a and 21a. Dates, repair IDs, original employee IDs and return redeployment IDs are saved automatically. Examples use pickup addresses in Berlin (DE) and Krakow (PL); ask your Tequipy contact to prepare compatible test data.
+
+A complete run creates three repairs (COMPLETED, REPAIR_REJECTED and CANCELLED) and two return redeployments in RECEIVED state. After completion or rejection, equipment is ACTIVE in storage and ready for return. Requests 14a and 21a create the returns and lock those devices again while their redeployments are pending. The cancelled repair leaves its device ACTIVE with the employee. A repeat run needs three active employee devices again. Records remain in the sandbox. Requests 25–27 deliberately expect errors.
+
+## 2. Create your first repair
+
+Send `POST /repairs` with the following body. Replace the IDs, contact address and future timestamp. A future `startAt` creates a repair in SET; omitting it starts in INITIATED.
+
+```json
+{
+  "userEquipmentId": "<active employee equipment ID>",
+  "companyEntityId": "<company entity ID>",
+  "requesterEmail": "you@example.com",
+  "reason": "Broken screen",
+  "notes": "repairs simulation example",
+  "pickUpDetails": {
+    "privateEmail": "you@example.com",
+    "fullName": "Sandbox contact",
+    "phoneNumber": "+49301234567",
+    "streetLine1": "Friedrichstrasse 123",
+    "postalCode": "10117",
+    "city": "Berlin",
+    "countryCode": "DE"
+  },
+  "startAt": "<future date and time, e.g. YYYY-MM-DDT10:00:00>"
+}
+```
+
+Save the response `id`. The examples below call it `repairId`. Creating the repair locks its equipment.
+
+## 3. Move the repair through service
+
+Send each simulation action to `POST /repairs/{repairId}/simulate`. Every successful response contains the updated repair.
+
+To replace operational steps in the sandbox, DELIVER automatically assigns the equipment to your company’s STORAGE user and a compatible warehouse. Rejection through the API also releases the equipment to ACTIVE in storage so you can create its return. These sandbox helpers do not change the production workflow.
+
+| Action | Allowed state | Parameters |
+| --- | --- | --- |
+| INITIATE | SET | None |
+| SCHEDULE_PICKUP | INITIATED, PICK_UP_REJECTED | scheduledAt required; uses the pickup address supplied when creating the repair. |
+| AGREE_DROPOFF | INITIATED | None; alternative to pickup scheduling. |
+| REJECT_PICKUP | INITIATED, SCHEDULED | None; records a failed pickup. |
+| PICK_UP | SCHEDULED, DROP_OFF_AGREED | Optional pickedUpAt. |
+| DELIVER | PICKED_UP | Optional deliveredAt. |
+| DIAGNOSE | DELIVERED | diagnosis and price required. |
+| ADD_PACKAGING_COST | SCHEDULED, PICKED_UP, DELIVERED | None; adds configured standard packaging cost. |
+| COMPLETE | REPAIR_APPROVED | Optional completedAt. |
+
+Start with INITIATE, then SCHEDULE_PICKUP. Timestamps use `YYYY-MM-DDTHH:mm:ss` without a timezone offset. Replace the scheduling placeholder:
+
+```json
+{"action":"INITIATE"}
+```
+
+```json
+{
+  "action": "SCHEDULE_PICKUP",
+  "params": {
+    "scheduledAt": "<pickup date and time>"
+  }
+}
+```
+
+Send PICK_UP, then DELIVER, then diagnose the repair:
+
+```json
+{
+  "action": "DIAGNOSE",
+  "params": {
+    "diagnosis": "Broken display",
+    "price": {
+      "amount": "180.00",
+      "currency": "EUR"
+    }
+  }
+}
+```
+
+The response is DIAGNOSED. Read `price` for the repair quote. Before the decision, `pricingSummary` is ESTIMATED and does not include the repair price.
+
+## 4. Approve and read the result
+
+Approve through the regular client endpoint `POST /repairs/{repairId}/approve`, with this body:
+
+```json
+{"decisionComment":"Approved in sandbox"}
+```
+
+The state becomes REPAIR_APPROVED and `pricingSummary` becomes FINAL. Then send `{"action":"COMPLETE"}` to the simulation endpoint. The repair becomes COMPLETED and the equipment returns to ACTIVE in storage.
+
+Read the repair using `GET /repairs/{repairId}` and the equipment using `GET /user-equipment/{deviceId}`. Request 14 checks that the equipment is ACTIVE, assigned to a STORAGE user and linked to a warehouse. Request 14a then calls `POST /redeployments` with the device ID in `storageEquipmentIds`, the original employee ID in `employeeId`, a `deliveryAddress` and `contactPersonEmail`. The collection captures the original employee when creating the repair and uses the original pickup address for the return. The return starts in RECEIVED and locks the equipment again; its ID is saved as `redeploymentId1`. This creates the return request but does not simulate its transport or delivery.
+
+## 5. Try failed pickup, rejection and cancellation
+
+**Failed pickup:** from SCHEDULED, send REJECT_PICKUP. The repair becomes PICK_UP_REJECTED. Send SCHEDULE_PICKUP with a new scheduledAt, then continue with PICK_UP.
+
+**Drop-off and rejection:** create another repair without startAt, send AGREE_DROPOFF, PICK_UP and DELIVER, then DIAGNOSE with a diagnosis such as “Not repairable” and price `{"amount":0,"currency":"EUR"}`. Send `POST /repairs/{repairId}/reject` with a decisionComment. The repair becomes REPAIR_REJECTED and the sandbox releases its equipment to ACTIVE in storage. Request 21 checks that it is ready for return; request 21a creates a return to the original employee through `POST /redeployments`, using the original pickup address. The return starts in RECEIVED, locks the equipment again and is saved as `redeploymentId2`.
+
+**Cancellation:** create a third repair with a future startAt, then send `POST /repairs/{repairId}/cancel`. The repair becomes CANCELLED and its equipment returns to ACTIVE with the employee; no return redeployment is created. Cancellation is allowed only in SET or INITIATED.
+
+Approve, reject and cancel are regular API operations; only the simulate endpoint is restricted to sandbox environments. There is no reset action. If a run stops early, inspect the repair before continuing. A repair left in SET can be initiated automatically when startAt is reached.
+
+In `DIAGNOSED`, no simulation action is allowed. Use the regular approve or reject endpoint first. To finish the returns created by requests 14a and 21a, [continue the saved redeployments](/sandbox/redeployments#continue-an-existing-repair-return).
+
+
+For failed requests, see [Sandbox troubleshooting](/sandbox/troubleshooting).

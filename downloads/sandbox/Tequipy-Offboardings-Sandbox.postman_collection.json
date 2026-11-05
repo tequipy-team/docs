@@ -1,0 +1,1831 @@
+{
+  "info": {
+    "_postman_id": "2ed98ec3-f0d2-4d4f-bfba-78a77861a521",
+    "name": "Tequipy Offboardings Sandbox",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Run discovery separately, fill variables, then run folders 2–6 once in order. Creates four offboardings: two COMPLETED and two CANCELLED. Devices 1 and 2 become ACTIVE in company storage at a Tequipy warehouse on COMPLETE; devices 3 and 4 remain with their original employees. No redeployment is created by this collection."
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "contactEmail",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "deviceId1",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "deviceId2",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "deviceId3",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "deviceId4",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "employeeId1",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "employeeId2",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "employeeId3",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "employeeId4",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "chargerReplacementType",
+      "value": "APPLE_CHARGER_USB_C_30_70W",
+      "type": "string"
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!pm.environment.get(\"baseUrl\") || !pm.environment.get(\"token\")) { pm.execution.skipRequest(); pm.execution.setNextRequest(null); throw new Error(\"Set environment baseUrl and token before sending requests.\"); }",
+          "if (pm.info.requestName.startsWith(\"Find \")) { } else {",
+          "const required = [\"contactEmail\", \"deviceId1\", \"deviceId2\", \"deviceId3\", \"deviceId4\", \"employeeId1\", \"employeeId2\", \"employeeId3\", \"employeeId4\"];",
+          "const missing = required.filter(key => !pm.collectionVariables.get(key));",
+          "if (missing.length) { pm.execution.skipRequest(); pm.execution.setNextRequest(null); throw new Error(\"Fill collection variables: \" + missing.join(\", \")); }",
+          "const devices = [1,2,3,4].map(i => pm.collectionVariables.get(\"deviceId\"+i));",
+          "if(new Set(devices).size !== 4) { pm.execution.skipRequest(); pm.execution.setNextRequest(null); throw new Error(\"Choose four distinct devices\"); }",
+          "}",
+          "if(pm.info.requestName.startsWith(\"Create \")) {",
+          "const date = days => new Date(Date.now()+days*86400000).toISOString().slice(0,19);",
+          "pm.collectionVariables.set(\"futureAt\", date(30));",
+          "pm.collectionVariables.set(\"pickupAt\", date(31));",
+          "pm.collectionVariables.set(\"retryAt\", date(32));",
+          "pm.collectionVariables.set(\"runTag\", String(Date.now()));",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "1 · Find your test data (run separately)",
+      "item": [
+        {
+          "name": "Find employees",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/users/query",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Find equipment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/user-equipments/query",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sourceType\": \"EMPLOYEES\",\n  \"states\": [\n    \"ACTIVE\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Find company addresses",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/company-addresses/query",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2 · Pickup, failed attempt and warehouse",
+      "item": [
+        {
+          "name": "Create scheduled offboarding",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/offboardings",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{employeeId1}}\",\n  \"pickUpDetails\": {\n    \"fullName\": \"Sandbox contact\",\n    \"streetLine1\": \"Szewska 1\",\n    \"postalCode\": \"30-000\",\n    \"city\": \"Krakow\",\n    \"countryCode\": \"PL\",\n    \"phoneNumber\": \"+48123456789\",\n    \"privateEmail\": \"{{contactEmail}}\"\n  },\n  \"offboardingEquipmentIds\": [\n    \"{{deviceId1}}\"\n  ],\n  \"notes\": \"Sandbox {{runTag}}\",\n  \"isChargerReplacementAllowed\": true,\n  \"lastWorkingDayAt\": \"{{futureAt}}\",\n  \"firstContactAt\": \"{{futureAt}}\",\n  \"givenEquipmentIds\": [],\n  \"sellBackEquipmentIds\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.test(\"Expected state: SCHEDULED\", () => pm.expect(data.state).to.eql(\"SCHEDULED\"));",
+                  "if(data.state !== \"SCHEDULED\") throw new Error(\"Unexpected state\");",
+                  "pm.expect(data.id).to.be.a(\"string\").and.not.empty; pm.collectionVariables.set(\"offboardingId1\", data.id);",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "COMPLETE (expected 409)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/offboardings/{{offboardingId1}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"COMPLETE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409\", () => pm.response.to.have.status(409));",
+                  "if (pm.response.code !== 409) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.expect(data.message).to.include(\"Allowed actions:\");",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "SEND_FIRST_EMAIL",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/offboardings/{{offboardingId1}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"SEND_FIRST_EMAIL\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.test(\"Expected state: FIRST_EMAIL_SENT\", () => pm.expect(data.state).to.eql(\"FIRST_EMAIL_SENT\"));",
+                  "if(data.state !== \"FIRST_EMAIL_SENT\") throw new Error(\"Unexpected state\");",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cancel after first email is rejected",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/offboardings/{{offboardingId1}}/cancel",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\",()=>pm.response.to.have.status(400));",
+                  "if(pm.response.code !== 400) pm.execution.setNextRequest(null);",
+                  "else { try { const data=pm.response.json(); pm.expect(data.message).to.eql(\"You can only cancel offboardings that are in SCHEDULED state.\"); } catch(error) {pm.test(\"Response contract\",()=>{throw error;});pm.execution.setNextRequest(null);} }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "SCHEDULE_PICKUP (expected 400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/offboardings/{{offboardingId1}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"SCHEDULE_PICKUP\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "if (pm.response.code !== 400) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "SCHEDULE_PICKUP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/offboardings/{{offboardingId1}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"SCHEDULE_PICKUP\",\n  \"params\": {\n    \"courierScheduledAt\": \"{{pickupAt}}\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.test(\"Expected state: READY_FOR_PICKUP\", () => pm.expect(data.state).to.eql(\"READY_FOR_PICKUP\"));",
+                  "if(data.state !== \"READY_FOR_PICKUP\") throw new Error(\"Unexpected state\");",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "REJECT_PICKUP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/offboardings/{{offboardingId1}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"REJECT_PICKUP\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.test(\"Expected state: PICKUP_FAILED\", () => pm.expect(data.state).to.eql(\"PICKUP_FAILED\"));",
+                  "if(data.state !== \"PICKUP_FAILED\") throw new Error(\"Unexpected state\");",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "SCHEDULE_PICKUP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/offboardings/{{offboardingId1}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"SCHEDULE_PICKUP\",\n  \"params\": {\n    \"courierScheduledAt\": \"{{retryAt}}\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.test(\"Expected state: READY_FOR_PICKUP\", () => pm.expect(data.state).to.eql(\"READY_FOR_PICKUP\"));",
+                  "if(data.state !== \"READY_FOR_PICKUP\") throw new Error(\"Unexpected state\");",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "ADD_PACKAGING_COST",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/offboardings/{{offboardingId1}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"ADD_PACKAGING_COST\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.test(\"Expected state: READY_FOR_PICKUP\", () => pm.expect(data.state).to.eql(\"READY_FOR_PICKUP\"));",
+                  "if(data.state !== \"READY_FOR_PICKUP\") throw new Error(\"Unexpected state\");",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "MARK_IN_TRANSIT",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/offboardings/{{offboardingId1}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"MARK_IN_TRANSIT\",\n  \"params\": {\n    \"deliveryCompany\": \"Sandbox carrier\",\n    \"deliveryNumber\": \"SANDBOX-{{runTag}}\",\n    \"deliveryUrl\": \"https://example.com/tracking/{{runTag}}\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.test(\"Expected state: DEVICE_IN_TRANSIT\", () => pm.expect(data.state).to.eql(\"DEVICE_IN_TRANSIT\"));",
+                  "if(data.state !== \"DEVICE_IN_TRANSIT\") throw new Error(\"Unexpected state\");",
+                  "pm.expect(data.equipmentDelivery.company).to.eql(\"Sandbox carrier\"); pm.expect(data.equipmentDelivery.number).to.eql(\"SANDBOX-\" + pm.collectionVariables.get(\"runTag\"));",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "RECEIVE_AT_WAREHOUSE",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/offboardings/{{offboardingId1}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"RECEIVE_AT_WAREHOUSE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.test(\"Expected state: DEVICE_IN_TEQUIPY_WAREHOUSE\", () => pm.expect(data.state).to.eql(\"DEVICE_IN_TEQUIPY_WAREHOUSE\"));",
+                  "if(data.state !== \"DEVICE_IN_TEQUIPY_WAREHOUSE\") throw new Error(\"Unexpected state\");",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "COMPLETE",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/offboardings/{{offboardingId1}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"COMPLETE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.test(\"Expected state: COMPLETED\", () => pm.expect(data.state).to.eql(\"COMPLETED\"));",
+                  "if(data.state !== \"COMPLETED\") throw new Error(\"Unexpected state\");",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Read completed offboarding",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/offboardings/{{offboardingId1}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.test(\"Expected state: COMPLETED\", () => pm.expect(data.state).to.eql(\"COMPLETED\"));",
+                  "if(data.state !== \"COMPLETED\") throw new Error(\"Unexpected state\");",
+                  "pm.expect(data.pricingSummary.state).to.eql(\"FINAL\");",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Read equipment and check owner",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/user-equipment/{{deviceId1}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.expect(data.state).to.eql(\"ACTIVE\"); pm.expect(data.user.role).to.eql(\"STORAGE\"); pm.expect(data.storage.id).to.be.a(\"string\");",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3 · Drop-off, materials and replacement cost",
+      "item": [
+        {
+          "name": "Create scheduled offboarding",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/offboardings",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{employeeId2}}\",\n  \"pickUpDetails\": {\n    \"fullName\": \"Sandbox contact\",\n    \"streetLine1\": \"Szewska 1\",\n    \"postalCode\": \"30-000\",\n    \"city\": \"Krakow\",\n    \"countryCode\": \"PL\",\n    \"phoneNumber\": \"+48123456789\",\n    \"privateEmail\": \"{{contactEmail}}\"\n  },\n  \"offboardingEquipmentIds\": [\n    \"{{deviceId2}}\"\n  ],\n  \"notes\": \"Sandbox {{runTag}}\",\n  \"isChargerReplacementAllowed\": true,\n  \"lastWorkingDayAt\": \"{{futureAt}}\",\n  \"firstContactAt\": \"{{futureAt}}\",\n  \"givenEquipmentIds\": [],\n  \"sellBackEquipmentIds\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.test(\"Expected state: SCHEDULED\", () => pm.expect(data.state).to.eql(\"SCHEDULED\"));",
+                  "if(data.state !== \"SCHEDULED\") throw new Error(\"Unexpected state\");",
+                  "pm.expect(data.id).to.be.a(\"string\").and.not.empty; pm.collectionVariables.set(\"offboardingId2\", data.id);",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "COMPLETE (expected 409)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/offboardings/{{offboardingId2}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"COMPLETE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409\", () => pm.response.to.have.status(409));",
+                  "if (pm.response.code !== 409) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.expect(data.message).to.include(\"Allowed actions:\");",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "SEND_FIRST_EMAIL",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/offboardings/{{offboardingId2}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"SEND_FIRST_EMAIL\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.test(\"Expected state: FIRST_EMAIL_SENT\", () => pm.expect(data.state).to.eql(\"FIRST_EMAIL_SENT\"));",
+                  "if(data.state !== \"FIRST_EMAIL_SENT\") throw new Error(\"Unexpected state\");",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "SEND_MATERIALS",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/offboardings/{{offboardingId2}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"SEND_MATERIALS\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.test(\"Expected state: MATERIALS_SENT\", () => pm.expect(data.state).to.eql(\"MATERIALS_SENT\"));",
+                  "if(data.state !== \"MATERIALS_SENT\") throw new Error(\"Unexpected state\");",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "AGREE_DROPOFF",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/offboardings/{{offboardingId2}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"AGREE_DROPOFF\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.test(\"Expected state: READY_FOR_DROPOFF\", () => pm.expect(data.state).to.eql(\"READY_FOR_DROPOFF\"));",
+                  "if(data.state !== \"READY_FOR_DROPOFF\") throw new Error(\"Unexpected state\");",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "REJECT_DROPOFF",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/offboardings/{{offboardingId2}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"REJECT_DROPOFF\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.test(\"Expected state: DROPOFF_FAILED\", () => pm.expect(data.state).to.eql(\"DROPOFF_FAILED\"));",
+                  "if(data.state !== \"DROPOFF_FAILED\") throw new Error(\"Unexpected state\");",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "AGREE_DROPOFF",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/offboardings/{{offboardingId2}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"AGREE_DROPOFF\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.test(\"Expected state: READY_FOR_DROPOFF\", () => pm.expect(data.state).to.eql(\"READY_FOR_DROPOFF\"));",
+                  "if(data.state !== \"READY_FOR_DROPOFF\") throw new Error(\"Unexpected state\");",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "ADD_PACKAGING_COST",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/offboardings/{{offboardingId2}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"ADD_PACKAGING_COST\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.test(\"Expected state: READY_FOR_DROPOFF\", () => pm.expect(data.state).to.eql(\"READY_FOR_DROPOFF\"));",
+                  "if(data.state !== \"READY_FOR_DROPOFF\") throw new Error(\"Unexpected state\");",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "ADD_PART_REPLACEMENT_COST",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/offboardings/{{offboardingId2}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"ADD_PART_REPLACEMENT_COST\",\n  \"params\": {\n    \"chargerReplacementType\": \"{{chargerReplacementType}}\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.test(\"Expected state: READY_FOR_DROPOFF\", () => pm.expect(data.state).to.eql(\"READY_FOR_DROPOFF\"));",
+                  "if(data.state !== \"READY_FOR_DROPOFF\") throw new Error(\"Unexpected state\");",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "MARK_IN_TRANSIT",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/offboardings/{{offboardingId2}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"MARK_IN_TRANSIT\",\n  \"params\": {\n    \"deliveryCompany\": \"Sandbox carrier\",\n    \"deliveryNumber\": \"SANDBOX-{{runTag}}\",\n    \"deliveryUrl\": \"https://example.com/tracking/{{runTag}}\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.test(\"Expected state: DEVICE_IN_TRANSIT\", () => pm.expect(data.state).to.eql(\"DEVICE_IN_TRANSIT\"));",
+                  "if(data.state !== \"DEVICE_IN_TRANSIT\") throw new Error(\"Unexpected state\");",
+                  "pm.expect(data.equipmentDelivery.company).to.eql(\"Sandbox carrier\"); pm.expect(data.equipmentDelivery.number).to.eql(\"SANDBOX-\" + pm.collectionVariables.get(\"runTag\"));",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "RECEIVE_AT_WAREHOUSE",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/offboardings/{{offboardingId2}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"RECEIVE_AT_WAREHOUSE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.test(\"Expected state: DEVICE_IN_TEQUIPY_WAREHOUSE\", () => pm.expect(data.state).to.eql(\"DEVICE_IN_TEQUIPY_WAREHOUSE\"));",
+                  "if(data.state !== \"DEVICE_IN_TEQUIPY_WAREHOUSE\") throw new Error(\"Unexpected state\");",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "COMPLETE",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/offboardings/{{offboardingId2}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"COMPLETE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.test(\"Expected state: COMPLETED\", () => pm.expect(data.state).to.eql(\"COMPLETED\"));",
+                  "if(data.state !== \"COMPLETED\") throw new Error(\"Unexpected state\");",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Read completed offboarding",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/offboardings/{{offboardingId2}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.test(\"Expected state: COMPLETED\", () => pm.expect(data.state).to.eql(\"COMPLETED\"));",
+                  "if(data.state !== \"COMPLETED\") throw new Error(\"Unexpected state\");",
+                  "pm.expect(data.pricingSummary.state).to.eql(\"FINAL\");",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Read equipment and check owner",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/user-equipment/{{deviceId2}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.expect(data.state).to.eql(\"ACTIVE\"); pm.expect(data.user.role).to.eql(\"STORAGE\"); pm.expect(data.storage.id).to.be.a(\"string\");",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4 · No response and automatic cancellation",
+      "item": [
+        {
+          "name": "Create scheduled offboarding",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/offboardings",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{employeeId3}}\",\n  \"pickUpDetails\": {\n    \"fullName\": \"Sandbox contact\",\n    \"streetLine1\": \"Szewska 1\",\n    \"postalCode\": \"30-000\",\n    \"city\": \"Krakow\",\n    \"countryCode\": \"PL\",\n    \"phoneNumber\": \"+48123456789\",\n    \"privateEmail\": \"{{contactEmail}}\"\n  },\n  \"offboardingEquipmentIds\": [\n    \"{{deviceId3}}\"\n  ],\n  \"notes\": \"Sandbox {{runTag}}\",\n  \"isChargerReplacementAllowed\": true,\n  \"lastWorkingDayAt\": \"{{futureAt}}\",\n  \"firstContactAt\": \"{{futureAt}}\",\n  \"givenEquipmentIds\": [],\n  \"sellBackEquipmentIds\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.test(\"Expected state: SCHEDULED\", () => pm.expect(data.state).to.eql(\"SCHEDULED\"));",
+                  "if(data.state !== \"SCHEDULED\") throw new Error(\"Unexpected state\");",
+                  "pm.expect(data.id).to.be.a(\"string\").and.not.empty; pm.collectionVariables.set(\"offboardingId3\", data.id);",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "COMPLETE (expected 409)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/offboardings/{{offboardingId3}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"COMPLETE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409\", () => pm.response.to.have.status(409));",
+                  "if (pm.response.code !== 409) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.expect(data.message).to.include(\"Allowed actions:\");",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "SEND_FIRST_EMAIL",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/offboardings/{{offboardingId3}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"SEND_FIRST_EMAIL\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.test(\"Expected state: FIRST_EMAIL_SENT\", () => pm.expect(data.state).to.eql(\"FIRST_EMAIL_SENT\"));",
+                  "if(data.state !== \"FIRST_EMAIL_SENT\") throw new Error(\"Unexpected state\");",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "SEND_FIRST_REMINDER",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/offboardings/{{offboardingId3}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"SEND_FIRST_REMINDER\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.test(\"Expected state: FIRST_REMINDER_SENT\", () => pm.expect(data.state).to.eql(\"FIRST_REMINDER_SENT\"));",
+                  "if(data.state !== \"FIRST_REMINDER_SENT\") throw new Error(\"Unexpected state\");",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "SEND_SECOND_REMINDER",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/offboardings/{{offboardingId3}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"SEND_SECOND_REMINDER\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.test(\"Expected state: SECOND_REMINDER_SENT\", () => pm.expect(data.state).to.eql(\"SECOND_REMINDER_SENT\"));",
+                  "if(data.state !== \"SECOND_REMINDER_SENT\") throw new Error(\"Unexpected state\");",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "MARK_EMPLOYEE_NOT_RESPONDING",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/offboardings/{{offboardingId3}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"MARK_EMPLOYEE_NOT_RESPONDING\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.test(\"Expected state: EMPLOYEE_NOT_RESPONDING\", () => pm.expect(data.state).to.eql(\"EMPLOYEE_NOT_RESPONDING\"));",
+                  "if(data.state !== \"EMPLOYEE_NOT_RESPONDING\") throw new Error(\"Unexpected state\");",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "AUTO_CANCEL",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/offboardings/{{offboardingId3}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"AUTO_CANCEL\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.test(\"Expected state: CANCELLED\", () => pm.expect(data.state).to.eql(\"CANCELLED\"));",
+                  "if(data.state !== \"CANCELLED\") throw new Error(\"Unexpected state\");",
+                  "pm.expect(data.cancellationReason).to.eql(\"UNABLE_TO_REACH_EMPLOYEE\");",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Read equipment and check owner",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/user-equipment/{{deviceId3}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.expect(data.state).to.eql(\"ACTIVE\"); pm.expect(data.user.id).to.eql(pm.collectionVariables.get(\"employeeId3\"));",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5 · Cancel before first email",
+      "item": [
+        {
+          "name": "Create scheduled offboarding",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/offboardings",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{employeeId4}}\",\n  \"pickUpDetails\": {\n    \"fullName\": \"Sandbox contact\",\n    \"streetLine1\": \"Szewska 1\",\n    \"postalCode\": \"30-000\",\n    \"city\": \"Krakow\",\n    \"countryCode\": \"PL\",\n    \"phoneNumber\": \"+48123456789\",\n    \"privateEmail\": \"{{contactEmail}}\"\n  },\n  \"offboardingEquipmentIds\": [\n    \"{{deviceId4}}\"\n  ],\n  \"notes\": \"Sandbox {{runTag}}\",\n  \"isChargerReplacementAllowed\": true,\n  \"lastWorkingDayAt\": \"{{futureAt}}\",\n  \"firstContactAt\": \"{{futureAt}}\",\n  \"givenEquipmentIds\": [],\n  \"sellBackEquipmentIds\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.test(\"Expected state: SCHEDULED\", () => pm.expect(data.state).to.eql(\"SCHEDULED\"));",
+                  "if(data.state !== \"SCHEDULED\") throw new Error(\"Unexpected state\");",
+                  "pm.expect(data.id).to.be.a(\"string\").and.not.empty; pm.collectionVariables.set(\"offboardingId4\", data.id);",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cancel scheduled offboarding",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/offboardings/{{offboardingId4}}/cancel"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.test(\"Expected state: CANCELLED\", () => pm.expect(data.state).to.eql(\"CANCELLED\"));",
+                  "if(data.state !== \"CANCELLED\") throw new Error(\"Unexpected state\");",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Read equipment and check owner",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/user-equipment/{{deviceId4}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.expect(data.state).to.eql(\"ACTIVE\"); pm.expect(data.user.id).to.eql(pm.collectionVariables.get(\"employeeId4\"));",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "6 · Check error handling",
+      "item": [
+        {
+          "name": "UNKNOWN_ACTION (expected 400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/offboardings/{{offboardingId1}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"UNKNOWN_ACTION\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "if (pm.response.code !== 400) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Missing action (expected 400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/offboardings/{{offboardingId1}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "if (pm.response.code !== 400) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

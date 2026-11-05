@@ -9,7 +9,10 @@
     "dark": "#111111"
   },
   "background": {
-    "color": { "light": "#FFFFFF", "dark": "#0E0E0E" }
+    "color": {
+      "light": "#FFFFFF",
+      "dark": "#0E0E0E"
+    }
   },
   "favicon": "/favicon.svg",
   "navigation": {
@@ -22,6 +25,22 @@
             "pages": [
               "quickstart",
               "authentication"
+            ]
+          },
+          {
+            "group": "Sandbox",
+            "pages": [
+              "sandbox/overview",
+              "sandbox/simulation-api",
+              "sandbox/orders",
+              "sandbox/repairs",
+              "sandbox/collections",
+              "sandbox/offboardings",
+              "sandbox/redeployments",
+              "sandbox/state-diagrams",
+              "sandbox/questions",
+              "sandbox/manual-processes",
+              "sandbox/troubleshooting"
             ]
           }
         ]

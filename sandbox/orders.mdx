@@ -1,0 +1,205 @@
+---
+title: "Orders"
+description: "Create test orders and simulate shipping, failed delivery, delivery and cancellation."
+---
+
+Start with [Sandbox setup](/sandbox/overview) for access, credentials and execution rules.
+
+[Download orders collection (29 requests)](/downloads/sandbox/Tequipy-Orders-Sandbox.postman_collection.json) · [Download shared environment](/downloads/sandbox/Tequipy-Sandbox.postman_environment.json)
+
+Use the Tequipy sandbox to create an order, move it through delivery and read each change through the API.
+
+## Before you start
+
+You need a sandbox account and a **read-write API token** for that account. Your Tequipy contact will provide access. If API Access is enabled for your administrator, you can generate a token in **Settings → API Access** in the [sandbox app](https://dev.app.tequipy.com/).
+
+Use test data and contact addresses you control. Simulation updates sandbox records and can send email notifications. Sample tracking details do not represent a real shipment.
+
+## 1. Set up Postman
+
+Download and import both files:
+
+- [Order simulation collection — 29 requests](/downloads/sandbox/Tequipy-Orders-Sandbox.postman_collection.json)
+- [Sandbox environment](/downloads/sandbox/Tequipy-Sandbox.postman_environment.json)
+
+Select the **Tequipy Sandbox** environment and enter your token as the local value of `token`, without the `Bearer` prefix. Keep the shared/exported value empty.
+
+Send requests **01–03** in **Find your test data**. Use their responses to fill in these collection variables:
+
+| Variable | Value to select |
+| --- | --- |
+| `companyEntityId` | Your company entity ID from request 01: `GET /company-entities`. |
+| `employeeId` | An active test employee ID from request 02: `POST /users/query` with `{}`. Check that the employee’s email addresses are ones you control. |
+| `equipmentId` | An available item ID from request 03: `POST /equipments/query` with `{"countryCode":"AE"}`. Choose an item with a price and no temporary-unavailability flag. |
+
+The collection uses a UAE delivery address. Keep the selected equipment and delivery country consistent. If you need a different country or additional test employees, ask your Tequipy contact to prepare them.
+
+Run the collection from request **01**, in the supplied order, with **one iteration**. The scripts create dates, save the new order IDs and check the responses.
+
+| Folder | What it does |
+| --- | --- |
+| Find your test data | Reads company entities, employees, catalogue items and orders. |
+| Deliver an order | Creates an order and moves it through preparation, shipping and delivery. |
+| Handle a failed delivery | Creates another order, records a failed attempt, then delivers it. |
+| Cancel an order | Creates an order and cancels it before preparation. |
+| Check error handling | Checks invalid actions and order ID filters. |
+
+A complete run creates **three orders: two delivered and one cancelled**. Re-running the collection creates three more. The records remain available for inspection. A delivered order cannot be reset; create another order to repeat a scenario.
+
+Some requests intentionally return `400`, `404` or `409`. Their Postman tests pass when the expected error is returned.
+
+## 2. Create your first order
+
+If you prefer curl, set your sandbox token and the three IDs selected above:
+
+```bash
+export TEQUIPY_BASE_URL='https://dev.backend.tequipy.com/integration'
+read -rs TEQUIPY_TOKEN
+export TEQUIPY_TOKEN
+export COMPANY_ENTITY_ID='<company entity ID>'
+export EMPLOYEE_ID='<active test employee ID>'
+export EQUIPMENT_ID='<UAE catalogue item ID>'
+```
+
+The `read` command waits for you to paste the token and press Enter; it does not display the token. Then create an order:
+
+```bash
+curl --silent --show-error "$TEQUIPY_BASE_URL/orders" \
+  -H "Authorization: Bearer $TEQUIPY_TOKEN" \
+  -H 'Content-Type: application/json' \
+  --data "{
+    \"orderType\": \"ASSIGN_EXISTING\",
+    \"companyEntityId\": \"$COMPANY_ENTITY_ID\",
+    \"employeeId\": \"$EMPLOYEE_ID\",
+    \"equipment\": [{\"id\": \"$EQUIPMENT_ID\", \"size\": 1}],
+    \"deliveryAddress\": {
+      \"fullName\": \"Sandbox delivery\",
+      \"streetLine1\": \"Al Wasl Road 10\",
+      \"postalCode\": \"00000\",
+      \"city\": \"Dubai\",
+      \"countryCode\": \"AE\",
+      \"phoneNumber\": \"+971500000000\"
+    }
+  }"
+```
+
+For an available catalogue item, the response includes an order `id` and `state: "RECEIVED"`. Copy that ID:
+
+```bash
+export ORDER_ID='<id from the response>'
+```
+
+If you receive a different state, read the response before continuing. The sequence below starts from `RECEIVED`.
+
+## 3. Move the order through delivery
+
+Send each action to the same endpoint:
+
+```text
+POST /orders/{orderId}/simulate
+```
+
+Prepare the order:
+
+```bash
+curl --silent --show-error "$TEQUIPY_BASE_URL/orders/$ORDER_ID/simulate" \
+  -H "Authorization: Bearer $TEQUIPY_TOKEN" \
+  -H 'Content-Type: application/json' \
+  --data '{"action":"PREPARE"}'
+```
+
+To continue, use the same curl command and replace the JSON body with each of these bodies, in order.
+
+**Ship with tracking details** — returns `SENT`:
+
+```json
+{
+  "action": "SHIP",
+  "params": {
+    "deliveryCompany": "Sandbox carrier",
+    "deliveryNumber": "SANDBOX-001",
+    "deliveryUrl": "https://example.com/tracking/SANDBOX-001"
+  }
+}
+```
+
+You may also include `estimatedDeliveryDate` in `YYYY-MM-DD` format. Omitting it clears any existing delivery estimate. The Postman collection supplies a date three days ahead.
+
+**Mark out for delivery** — returns `OUT_FOR_DELIVERY`:
+
+```json
+{"action": "OUT_FOR_DELIVERY"}
+```
+
+**Complete delivery** — returns `DELIVERED`:
+
+```json
+{"action": "DELIVER"}
+```
+
+To set a delivery date, add `params.deliveryDate` in `YYYY-MM-DD` format. Otherwise the sandbox uses its current date. Simulated equipment has serial numbers starting with `SIM-`; delivery makes the equipment active.
+
+## Action reference
+
+Use `POST /orders/{orderId}/simulate` for these actions. The walkthrough above
+creates `ASSIGN_EXISTING` orders; the preparation parameter for warehouse orders
+is included for integrations that use that order type.
+
+| Action | Allowed current states | Parameters |
+| --- | --- | --- |
+| `PREPARE` | `RECEIVED` | For `TEQUIPY_WAREHOUSE`, `companyAddressId` must identify an active Tequipy warehouse supporting orders. |
+| `SHIP` | `PREPARING`, `AWAITING_CTO_ORDER` | Optional `deliveryCompany`, `deliveryNumber`, `deliveryUrl`, `estimatedDeliveryDate` (`YYYY-MM-DD`). Omitting the estimate clears it. |
+| `OUT_FOR_DELIVERY` | `SENT` | None. |
+| `DELIVERY_FAILED` | `SENT`, `OUT_FOR_DELIVERY` | Required `deliveryFailureReason`. |
+| `DELIVER` | `SENT`, `OUT_FOR_DELIVERY`, `DELIVERY_FAILED` | Optional `deliveryDate` (`YYYY-MM-DD`); otherwise the sandbox uses its current date. |
+
+## 4. Read the result
+
+Each simulation response includes the updated order. You can also retrieve it independently:
+
+```bash
+curl --silent --show-error "$TEQUIPY_BASE_URL/orders/$ORDER_ID" \
+  -H "Authorization: Bearer $TEQUIPY_TOKEN"
+```
+
+Use `state` to update your application. Tracking details are available in `orderDelivery`; the estimate is in `estimatedDeliveryDate`.
+
+To poll several orders, pass the IDs returned by Tequipy when you created them:
+
+```bash
+curl --silent --show-error "$TEQUIPY_BASE_URL/orders/query?page=0&size=20" \
+  -H "Authorization: Bearer $TEQUIPY_TOKEN" \
+  -H 'Content-Type: application/json' \
+  --data "{\"ids\":[\"$ORDER_ID\"]}"
+```
+
+Read records from `content` and use the pagination metadata to fetch further pages. The order query supports IDs and creation-date filters; an “updated since” filter is not included in the current API.
+
+## 5. Try failure and cancellation
+
+### Failed or refused delivery
+
+On an order in `SENT` or `OUT_FOR_DELIVERY`, send:
+
+```json
+{
+  "action": "DELIVERY_FAILED",
+  "params": {"deliveryFailureReason": "Recipient refused the parcel"}
+}
+```
+
+The response has state `DELIVERY_FAILED` and the supplied reason. To complete delivery after that attempt, send `{"action":"DELIVER"}`. Rescheduling the failed attempt with a new date is not a separate action in the current API.
+
+### Cancel before preparation
+
+Create a fresh order and cancel it while it is in `RECEIVED`:
+
+```bash
+curl --silent --show-error -X POST \
+  "$TEQUIPY_BASE_URL/orders/$ORDER_ID/cancel" \
+  -H "Authorization: Bearer $TEQUIPY_TOKEN"
+```
+
+The cancellation state is **`DECLINED`**. Cancellation after preparation is rejected; do not assume that every order which has not yet shipped can be cancelled. This example tests the API state, not billing or refund rules.
+
+For failed requests, see [Sandbox troubleshooting](/sandbox/troubleshooting).

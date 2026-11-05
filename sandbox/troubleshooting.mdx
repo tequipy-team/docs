@@ -1,0 +1,69 @@
+---
+title: "Troubleshooting"
+description: "Understand sandbox errors and continue an interrupted simulation safely."
+---
+
+## Interpret the response
+
+| HTTP status | What to check |
+| --- | --- |
+| `400` | Action name, required parameters and address fields. Repairs use `scheduledAt`; collections and offboardings use `courierScheduledAt`. Repair and offboarding cancellation also have state restrictions. |
+| `401` | Sandbox API token is present and valid. Send it as `Authorization: Bearer <token>`. |
+| `403` | Token permissions. Simulation needs read & write access. |
+| `404` | Record ID, sandbox company and environment. Service simulation hides another company’s records with 404; regular read endpoints can report ownership errors differently. A missing simulation deployment can also cause 404. |
+| `409` | Simulation action is unavailable in the current state. Read the record and the allowed actions in the response. Clearing a redeployment delay also requires `delayed: true`. |
+| `422` | Read the business validation message. Check equipment eligibility, KYB, service prices, billing setup and cancellation rules. A packaging item cannot be added twice. |
+
+For example, shipping an order before preparing it returns 409:
+
+```json
+{
+  "message": "Cannot run SHIP on Order in RECEIVED state. Allowed actions: [PREPARE]"
+}
+```
+
+The collections include intentional error requests. An expected 400, 404, 409 or
+422 is a passing scenario only when the supplied assertion expects that response.
+Stop on any unexpected status or failed assertion.
+
+## Cancellation differs between resources
+
+Cancellation uses `POST /{resource}/{id}/cancel`, rather than a simulation action.
+
+| Resource | Rule for the scenarios in these guides | Final state |
+| --- | --- | --- |
+| Orders | Cancel a newly created `RECEIVED` order before preparation. The regular API also permits `ONBOARDING_SET` and `APPROVAL_PENDING`, subject to approval permissions. | `DECLINED` |
+| Repairs | Only `SET` or `INITIATED`; an invalid state returns 400. | `CANCELLED` |
+| Collections | Before transit, in `SCHEDULED`, email/reminder states, `EMPLOYEE_NOT_RESPONDING`, `EMPLOYEE_RESPONDED`, `MATERIALS_SENT`, `READY_FOR_PICKUP`, `READY_FOR_DROPOFF`, `PICKUP_FAILED` or `DROPOFF_FAILED`. Invalid transitions return 422. | `CANCELLED` |
+| Offboardings | Only `SCHEDULED`; later states return 400. | `CANCELLED` |
+| Redeployments | `RECEIVED` or `PREPARING`; later states return 422. | `DECLINED` |
+
+Billing and other business validation still apply. An eligible state alone does
+not guarantee cancellation, especially if the request has already been invoiced.
+
+## Missing warehouse or billing configuration
+
+Ask your Tequipy contact to check the company’s storage user, compatible Tequipy
+warehouse for the pickup or delivery country, service prices, billing entity,
+billing cycle and KYB approval. Repair `DELIVER` and collection/offboarding
+`COMPLETE` need a warehouse in the pickup country. Order `PREPARE` for a warehouse
+order needs an active Tequipy address that supports orders.
+
+## Continue an interrupted run
+
+Read the current record through `GET /orders/{id}`, `GET /repairs/{id}`,
+`GET /collections/{id}`, `GET /offboardings/{id}` or `GET /redeployments/{id}`.
+Check its state and the saved collection variables before sending the next action.
+Read equipment separately to confirm its owner, location and availability.
+
+Do not rerun creation simply because a request timed out. There is no reset action
+and repeat runs create more records. Use fresh eligible test data for a new run.
+
+The collection storage assertions request one page of up to 3000 records and fail
+if another page exists. Use a smaller sandbox dataset or inspect the device by ID
+and query all pages manually. Discovery results are also paginated.
+
+## Ask for help
+
+Send your Tequipy contact the method, path, record ID, timestamp, HTTP status and
+response body. Remove API tokens and personal contact details before sharing.

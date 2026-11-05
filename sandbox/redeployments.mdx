@@ -1,0 +1,144 @@
+---
+title: "Redeployments"
+description: "Simulate delivery of stored equipment to employees or company addresses."
+---
+
+Start with [Sandbox setup](/sandbox/overview) for access, credentials and execution rules.
+
+[Download redeployments collection (49 requests)](/downloads/sandbox/Tequipy-Redeployments-Sandbox.postman_collection.json) · [Download shared environment](/downloads/sandbox/Tequipy-Sandbox.postman_environment.json)
+
+Create sandbox records, move them through operational steps and read the results through the API.
+
+## Before you start
+
+Four different ACTIVE devices already held by your company STORAGE user at a Tequipy warehouse. Two active target employees and an active company address. Device 1 may be the output of a completed or rejected repair: set employeeId1 to its original employee to test a same-worker return. The collection does not create the preceding repair.
+
+## 1. Set up Postman
+
+Import the collection above and the [shared sandbox environment](/downloads/sandbox/Tequipy-Sandbox.postman_environment.json), then select **Tequipy Sandbox**. Set the local value of `token`, without the Bearer prefix. Leave exported credentials empty. Run folder 1 separately, then fill the collection variables below. Follow pagination when selecting records. Examples use Poland: edit all pickup/delivery addresses consistently if using another supported country.
+
+| Variable | Value |
+| --- | --- |
+| `contactEmail` | An email address you control |
+| `deviceId1`–`deviceId4` | Four different active devices in eligible Tequipy storage. |
+| `employeeId1`, `employeeId2` | Two active target employees; use the original employee for a repair-return test if needed. |
+| `companyAddressId` | An active company address ID; keep deliveryAddress consistent with it |
+
+Run folders 2–7 once, in order, with one iteration. Stop on a failed assertion. Scripts save record IDs and generate future dates automatically. Date-times use `YYYY-MM-DDTHH:mm:ss`, without a timezone offset. Do not run the folders in parallel.
+
+## Create a request without Postman
+
+Send `POST /redeployments` with the body below. Replace the IDs, controlled contact
+address and any future timestamps. Use a device and employee that meet the
+prerequisites above.
+
+```json
+{
+  "storageEquipmentIds": [
+    "<eligible device ID>"
+  ],
+  "deliveryAddress": {
+    "fullName": "Sandbox contact",
+    "streetLine1": "Szewska 1",
+    "postalCode": "30-000",
+    "city": "Krakow",
+    "countryCode": "PL",
+    "phoneNumber": "+48123456789"
+  },
+  "contactPersonEmail": "you@example.com",
+  "employeeId": "<active employee ID>"
+}
+```
+
+Save the returned `id`. Then send the actions for the first scenario to
+`POST /redeployments/{id}/simulate`, reading each response before the next action.
+The expected initial state is `RECEIVED`.
+
+## 2. Run the scenarios
+
+The Postman collection contains the exact requests and assertions. Run the
+folders in order; the table below explains each scenario and its expected result.
+
+| Folder | Scenario | Expected result |
+| --- | --- | --- |
+| 2 · Deliver to an employee | Create, prepare, set/clear delay, ship, mark out for delivery and deliver. | `DELIVERED`; equipment `ACTIVE` with the target employee. |
+| 3 · Failed delivery, then deliver to another employee | Create for another employee, prepare and ship, record a failed delivery, then deliver the same record. | `DELIVERED`; equipment `ACTIVE` with the second employee. |
+| 4 · Deliver to a company address | Create for the prepared company address, then prepare, ship and deliver. | `DELIVERED`; equipment assigned to internal company storage at that address. |
+| 5 · Cancel a new redeployment | Create and cancel before shipping. | `DECLINED`; equipment is released back to eligible storage. |
+| 6 · Check error handling | Send an unknown action, omit the action and omit a required failure reason. | Expected `400` responses. |
+
+The scenarios inspect API responses and equipment. Requests labelled
+with an expected error pass only when that error is returned. Premature completion
+and invalid transitions are deliberate negative checks, not failed walkthroughs.
+
+Each simulation request sends JSON to `POST /redeployments/{id}/simulate`. Example with tracking details (Postman fills `runTag`; replace it with your own reference when sending manually):
+
+```json
+{
+  "action": "SHIP",
+  "params": {
+    "deliveryCompany": "Sandbox carrier",
+    "deliveryNumber": "SANDBOX-{{runTag}}",
+    "deliveryUrl": "https://example.com/tracking/{{runTag}}"
+  }
+}
+```
+
+## 3. Action reference
+
+Use the exact action names below. Partner cancellation uses the regular `POST /redeployments/{id}/cancel` endpoint, not a simulation action.
+
+| Action | Allowed current states | Params |
+| --- | --- | --- |
+| `PREPARE` | RECEIVED | No params. |
+| `SHIP` | PREPARING | Optional deliveryCompany, deliveryNumber, deliveryUrl, estimatedDeliveryDate. Omitting the estimate may clear it. |
+| `OUT_FOR_DELIVERY` | SENT | No params. |
+| `DELIVERY_FAILED` | SENT, OUT_FOR_DELIVERY | deliveryFailureReason required. |
+| `DELIVER` | SENT, OUT_FOR_DELIVERY, DELIVERY_FAILED | Optional deliveredAt (date-time). |
+| `SET_DELAY` | RECEIVED, PREPARING, SENT, OUT_FOR_DELIVERY | Required delayReason: COURIER_ISSUES, REMOTE_DELIVERY_ADDRESS, INCOMPLETE_ADDRESS or HOLIDAY_PERIOD. |
+| `CLEAR_DELAY` | delayed = true | No params; preserves state and estimated delivery date. |
+
+## 4. Read the result
+
+`SHIP` already changes equipment ownership or location to the target employee or
+company address. The equipment stays locked until `DELIVER` makes it `ACTIVE`.
+
+Creates four redeployments: three DELIVERED and one DECLINED. Devices 1 and 2 belong to the chosen employees; device 3 is in company storage at the selected company address; device 4 remains in storage.
+
+Read a record with `GET /redeployments/{id}` or list records with `POST /redeployments/query?page=0&size=20` and body `{}`. Read a device with `GET /user-equipment/{deviceId}`; query stored devices with `POST /user-equipments/query` and `{"sourceType":"STORAGE"}`.
+
+## Scope and limitations
+
+Folder 2 tests setting and clearing a delay, a missing reason and clearing an unset flag. Folder 7 checks delay actions on the delivered record with no active delay. `CLEAR_DELAY` is available in any state when `delayed` is `true`; it returns 409 when no delay is set. Partner cancellation is accepted only in RECEIVED and PREPARING. In any later state it returns HTTP 422 and the record does not change. Folder 2 checks this after SHIP. Save the repair and return redeployment IDs in your application to correlate the two requests. A recipient who is OFFBOARDED cannot receive equipment. Shipping needs a billing entity and an active billing cycle. Tracking values are examples; this collection does not contact a carrier.
+
+There is no reset. Re-running creates more records and needs eligible devices again. Background jobs can advance scheduled records when their dates arrive. If a run stops, read the saved record before continuing; do not retry creation blindly. This package does not verify actual email delivery, carrier webhooks, invoice settlement or read-only tokens. The optional second-company check covers one isolation scenario only when a suitable record ID is supplied.
+
+## Additional checks
+
+Run these checks after the main scenarios.
+
+### 7 · Invalid transitions and missing records
+
+1. Reject PREPARE on completed record
+1. Reject SHIP on completed record
+1. Reject OUT_FOR_DELIVERY on completed record
+1. Reject DELIVERY_FAILED on completed record
+1. Reject DELIVER on completed record
+1. Missing record returns 404
+1. Reject a device that is now with an employee instead of storage
+1. Reject SET_DELAY on completed record
+1. Reject CLEAR_DELAY on completed record
+
+Folder 7 also verifies that device 1, now assigned to an employee, cannot be redeployed from storage: HTTP 400 with the country-availability validation message.
+
+### 8 · Optional second-company isolation check
+
+1. Other company record returns 404
+
+Folder 8 needs otherCompanyRecordId from a different sandbox company; leave it blank to skip explicitly. These requests check that the current token cannot access that record.
+
+## Continue an existing repair return
+
+The [repair collection](/sandbox/repairs) already creates two return redeployments in `RECEIVED`. To deliver one, use its saved `redeploymentId1` or `redeploymentId2` directly with `POST /redeployments/{id}/simulate`: send `PREPARE`, `SHIP`, `OUT_FOR_DELIVERY`, then `DELIVER`. Do not run this collection’s create request for that device: the existing return has already locked it. The four-device walkthrough above starts with separate eligible storage devices.
+
+For failed requests, see [Sandbox troubleshooting](/sandbox/troubleshooting).

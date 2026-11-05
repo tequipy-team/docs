@@ -122,7 +122,8 @@ curl -X POST https://prod.backend.tequipy.com/integration/offboardings \
   -d '{
     "userId": "<EMPLOYEE_ID>",
     "offboardingEquipmentIds": ["<EQUIPMENT_ID>"],
-    "lastWorkingDayAt": "2025-07-31T17:00:00Z",
+    "lastWorkingDayAt": "2030-01-15T17:00:00",
+    "firstContactAt": "2030-01-14T10:00:00",
     "pickUpDetails": {
       "fullName": "Jane Doe",
       "privateEmail": "jane.personal@example.com",
@@ -144,8 +145,13 @@ curl https://prod.backend.tequipy.com/integration/offboardings/<OFFBOARDING_ID> 
   -H "Authorization: Bearer $TEQUIPY_TOKEN"
 ```
 
-The `state` field progresses through:
-`INITIATED` → `MATERIALS_SENT` → `COURIER_SCHEDULED` → `PICKED_UP` → `COMPLETED`
+Replace the example dates with suitable future date-times, without a timezone
+offset. Include every active device in the return, give-away or sell-back lists.
+For a return with future contact, one pickup path is:
+`SCHEDULED` → `FIRST_EMAIL_SENT` → `READY_FOR_PICKUP` → `DEVICE_IN_TRANSIT` →
+`DEVICE_IN_TEQUIPY_WAREHOUSE` → `COMPLETED`.
+
+Try this workflow with test data in the [offboarding sandbox guide](/sandbox/offboardings).
 
 </Step>
 
@@ -168,13 +174,14 @@ curl -X POST https://prod.backend.tequipy.com/integration/redeployments \
   -d '{
     "employeeId": "<EMPLOYEE_ID>",
     "storageEquipmentIds": ["<USER_EQUIPMENT_ID>"],
-    "startDate": "2025-08-01",
+    "contactPersonEmail": "alex@example.com",
     "deliveryAddress": {
       "fullName": "Alex Smith",
       "streetLine1": "Rosenthaler Str. 40",
       "city": "Berlin",
       "postalCode": "10178",
-      "countryCode": "DE"
+      "countryCode": "DE",
+      "phoneNumber": "+49301234567"
     }
   }'
 ```
@@ -188,8 +195,10 @@ curl https://prod.backend.tequipy.com/integration/redeployments/<REDEPLOYMENT_ID
   -H "Authorization: Bearer $TEQUIPY_TOKEN"
 ```
 
-The `state` field progresses through:
-`INITIATED` → `PROCESSING` → `SENT` → `OUT_FOR_DELIVERY` → `COMPLETED`
+For an immediate redeployment, one delivery path is:
+`RECEIVED` → `PREPARING` → `SENT` → `OUT_FOR_DELIVERY` → `DELIVERED`.
+
+Try this workflow with test data in the [redeployment sandbox guide](/sandbox/redeployments).
 
 </Step>
 
@@ -284,6 +293,9 @@ returns an error, so you can retry a failed batch safely. Tell us when a value
 you need is missing from the parameters registry, and we add it.
 
 ## Next steps
+
+Use the [Sandbox](/sandbox/overview) to test complete workflows with test data
+and simulate operational steps through the API.
 
 <CardGroup cols={3}>
   <Card title="API Reference" icon="code" href="/api-reference">

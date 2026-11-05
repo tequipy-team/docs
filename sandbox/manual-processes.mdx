@@ -1,0 +1,31 @@
+---
+title: "Manual processes"
+description: "How to coordinate requests that need Tequipy operations."
+---
+
+Contact your Tequipy account contact for the processes below. Include your company,
+country, resource ID, requested change and relevant dates. Do not send API tokens.
+For an existing request, keep using its ID unless Tequipy confirms a replacement
+request is needed.
+
+There is no standard response-time commitment for these processes. Your Tequipy
+contact confirms the next step and expected timing for each request. Sending a
+message alone does not cancel a request or change its address.
+
+| Process | What to provide and agree with Tequipy | What the Integration API shows |
+| --- | --- | --- |
+| Order in a country without a suitable catalogue item | Country, specification, quantity, delivery address and target date. Tequipy confirms sourcing, quote and availability. | No off-catalogue sourcing workflow. If an order is created, read its ID through `GET /orders/{id}` or `/orders/query`. |
+| Repair outside configured service coverage | Device ID, location, fault description and desired outcome. Confirm coverage and logistics before submitting. | No endpoint to override missing pricing or warehouse coverage. An accepted repair is visible through `GET /repairs/{id}` or `/repairs/query`. |
+| Custom sourcing or substitution | Original order ID if applicable, required specification and acceptable alternatives. Agree the quote and how any replacement is recorded. | No automatic substitution or custom-sourcing state. Query the confirmed order ID. |
+| Cancellation after the partner cancellation window | Request ID and reason. Tequipy checks operational progress and any incurred charges. | Read the existing request. A message does not guarantee `CANCELLED` or `DECLINED`; wait for the confirmed outcome. |
+| Change of address after creation | Request ID, complete new address, contact details and urgency. Coordinate before dispatch. | No partner address-change endpoint for an existing service request. Read back the request to verify any supported update; a carrier-side change may require manual confirmation. |
+| Warranty repair | Device ID, serial number, purchase/warranty evidence and fault description. Tequipy coordinates assessment and vendor handling. | No dedicated warranty-covered flag. A vendor-covered repair may have a zero repair quote; logistics charges still need confirmation. Use the normal repair states and quote decision. |
+| Returned equipment condition report | Collection/offboarding ID, device ID and requested inspection details. Agree how the report is supplied and any follow-up service. | No structured condition-report field or automatically linked repair. Packaging/replacement charges are separate pricing items. |
+
+Use `POST /orders/query`, `/repairs/query`, `/collections/query`,
+`/offboardings/query` or `/redeployments/query` with the relevant filters and
+pagination to follow recorded changes. These queries show resource data, not a
+support conversation, manual-task queue or guaranteed completion date.
+
+For API failures, use the [troubleshooting checklist](/sandbox/troubleshooting#ask-for-help).
+For cancellation, storage and invoice questions, see [Integration questions](/sandbox/questions).

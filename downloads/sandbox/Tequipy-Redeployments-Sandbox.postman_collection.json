@@ -1,0 +1,2010 @@
+{
+  "info": {
+    "_postman_id": "ebc0ce66-afea-44e9-948f-417b6ca1a4fb",
+    "name": "Tequipy Redeployments Sandbox",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Run discovery separately, fill variables, then run folders 2–6 once in order. Creates four redeployments: three DELIVERED and one DECLINED. Devices 1 and 2 belong to the chosen employees; device 3 is in company storage at the selected company address; device 4 remains in storage. Folders 7–8 add extended checks. Folder 8 is skipped without another-company record."
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "contactEmail",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "deviceId1",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "deviceId2",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "deviceId3",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "deviceId4",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "employeeId1",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "employeeId2",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "companyAddressId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "otherCompanyRecordId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!pm.environment.get(\"baseUrl\") || !pm.environment.get(\"token\")) { pm.execution.skipRequest(); pm.execution.setNextRequest(null); throw new Error(\"Set environment baseUrl and token before sending requests.\"); }",
+          "if (pm.info.requestName.startsWith(\"Find \")) { } else {",
+          "const required = [\"contactEmail\", \"deviceId1\", \"deviceId2\", \"deviceId3\", \"deviceId4\", \"employeeId1\", \"employeeId2\", \"companyAddressId\"];",
+          "const missing = required.filter(key => !pm.collectionVariables.get(key));",
+          "if (missing.length) { pm.execution.skipRequest(); pm.execution.setNextRequest(null); throw new Error(\"Fill collection variables: \" + missing.join(\", \")); }",
+          "const devices = [1,2,3,4].map(i => pm.collectionVariables.get(\"deviceId\"+i));",
+          "if(new Set(devices).size !== 4) { pm.execution.skipRequest(); pm.execution.setNextRequest(null); throw new Error(\"Choose four distinct devices\"); }",
+          "}",
+          "if(pm.info.requestName.startsWith(\"Create \")) {",
+          "const date = days => new Date(Date.now()+days*86400000).toISOString().slice(0,19);",
+          "pm.collectionVariables.set(\"futureAt\", date(30));",
+          "pm.collectionVariables.set(\"pickupAt\", date(31));",
+          "pm.collectionVariables.set(\"retryAt\", date(32));",
+          "pm.collectionVariables.set(\"runTag\", String(Date.now()));",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "1 · Find your test data (run separately)",
+      "item": [
+        {
+          "name": "Find employees",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/users/query",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Find equipment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/user-equipments/query",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sourceType\": \"STORAGE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Find company addresses",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/company-addresses/query",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2 · Deliver to an employee",
+      "item": [
+        {
+          "name": "Create redeployment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/redeployments",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"storageEquipmentIds\": [\n    \"{{deviceId1}}\"\n  ],\n  \"deliveryAddress\": {\n    \"fullName\": \"Sandbox contact\",\n    \"streetLine1\": \"Szewska 1\",\n    \"postalCode\": \"30-000\",\n    \"city\": \"Krakow\",\n    \"countryCode\": \"PL\",\n    \"phoneNumber\": \"+48123456789\"\n  },\n  \"contactPersonEmail\": \"{{contactEmail}}\",\n  \"employeeId\": \"{{employeeId1}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.test(\"Expected state: RECEIVED\", () => pm.expect(data.state).to.eql(\"RECEIVED\"));",
+                  "if(data.state !== \"RECEIVED\") throw new Error(\"Unexpected state\");",
+                  "pm.expect(data.id).to.be.a(\"string\").and.not.empty; pm.collectionVariables.set(\"redeploymentId1\", data.id);",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "SHIP (expected 409)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/redeployments/{{redeploymentId1}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"SHIP\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409\", () => pm.response.to.have.status(409));",
+                  "if (pm.response.code !== 409) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.expect(data.message.split(\"Allowed actions: \")[1]).to.eql(\"[PREPARE, SET_DELAY]\");",
+                  "pm.expect(data.message).to.include(\"Allowed actions:\");",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CLEAR_DELAY (expected 409)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/redeployments/{{redeploymentId1}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"CLEAR_DELAY\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409\", () => pm.response.to.have.status(409));",
+                  "if (pm.response.code !== 409) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.expect(data.message).to.include(\"Allowed actions: [PREPARE, SET_DELAY]\");",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "SET_DELAY (expected 400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/redeployments/{{redeploymentId1}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"SET_DELAY\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "if (pm.response.code !== 400) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.expect(data.message).to.include(\"delayReason is required\");",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "SET_DELAY",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/redeployments/{{redeploymentId1}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"SET_DELAY\",\n  \"params\": {\n    \"delayReason\": \"COURIER_ISSUES\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.expect(data.id).to.eql(pm.collectionVariables.get(\"redeploymentId1\"));",
+                  "pm.expect(data.state).to.eql(\"RECEIVED\");",
+                  "pm.expect(data.delayed).to.eql(true); pm.expect(data.delayReason).to.eql(\"COURIER_ISSUES\");",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CLEAR_DELAY",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/redeployments/{{redeploymentId1}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"CLEAR_DELAY\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.expect(data.id).to.eql(pm.collectionVariables.get(\"redeploymentId1\"));",
+                  "pm.expect(data.state).to.eql(\"RECEIVED\");",
+                  "pm.expect(data.delayed).to.eql(false); pm.expect(data).not.to.have.property(\"delayReason\");",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PREPARE",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/redeployments/{{redeploymentId1}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"PREPARE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.expect(data.id).to.eql(pm.collectionVariables.get(\"redeploymentId1\"));",
+                  "pm.test(\"Expected state: PREPARING\", () => pm.expect(data.state).to.eql(\"PREPARING\"));",
+                  "if(data.state !== \"PREPARING\") throw new Error(\"Unexpected state\");",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "SHIP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/redeployments/{{redeploymentId1}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"SHIP\",\n  \"params\": {\n    \"deliveryCompany\": \"Sandbox carrier\",\n    \"deliveryNumber\": \"SANDBOX-{{runTag}}\",\n    \"deliveryUrl\": \"https://example.com/tracking/{{runTag}}\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.expect(data.equipmentDelivery.company).to.eql(\"Sandbox carrier\"); pm.expect(data.equipmentDelivery.number).to.eql(\"SANDBOX-\"+pm.collectionVariables.get(\"runTag\")); pm.expect(data.equipmentDelivery.url).to.eql(\"https://example.com/tracking/\"+pm.collectionVariables.get(\"runTag\"));",
+                  "pm.expect(data.id).to.eql(pm.collectionVariables.get(\"redeploymentId1\"));",
+                  "pm.test(\"Expected state: SENT\", () => pm.expect(data.state).to.eql(\"SENT\"));",
+                  "if(data.state !== \"SENT\") throw new Error(\"Unexpected state\");",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cancel after shipping is rejected",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/redeployments/{{redeploymentId1}}/cancel",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 422\",()=>pm.response.to.have.status(422));",
+                  "if(pm.response.code !== 422) pm.execution.setNextRequest(null);",
+                  "else { try { const data=pm.response.json(); pm.expect(data.message).to.eql(\"Only RECEIVED or PREPARING redeployments can be declined\"); } catch(error) {pm.test(\"Response contract\",()=>{throw error;});pm.execution.setNextRequest(null);} }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "OUT_FOR_DELIVERY",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/redeployments/{{redeploymentId1}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"OUT_FOR_DELIVERY\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.expect(data.id).to.eql(pm.collectionVariables.get(\"redeploymentId1\"));",
+                  "pm.test(\"Expected state: OUT_FOR_DELIVERY\", () => pm.expect(data.state).to.eql(\"OUT_FOR_DELIVERY\"));",
+                  "if(data.state !== \"OUT_FOR_DELIVERY\") throw new Error(\"Unexpected state\");",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELIVER",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/redeployments/{{redeploymentId1}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"DELIVER\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.expect(data.id).to.eql(pm.collectionVariables.get(\"redeploymentId1\"));",
+                  "pm.test(\"Expected state: DELIVERED\", () => pm.expect(data.state).to.eql(\"DELIVERED\"));",
+                  "if(data.state !== \"DELIVERED\") throw new Error(\"Unexpected state\");",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Read delivered redeployment",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/redeployments/{{redeploymentId1}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.expect(data.id).to.eql(pm.collectionVariables.get(\"redeploymentId1\"));",
+                  "pm.test(\"Expected state: DELIVERED\", () => pm.expect(data.state).to.eql(\"DELIVERED\"));",
+                  "if(data.state !== \"DELIVERED\") throw new Error(\"Unexpected state\");",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Read equipment and check owner",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/user-equipment/{{deviceId1}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.expect(data.state).to.eql(\"ACTIVE\"); pm.expect(data.user.id).to.eql(pm.collectionVariables.get(\"employeeId1\"));",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3 · Failed delivery, then deliver to another employee",
+      "item": [
+        {
+          "name": "Create redeployment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/redeployments",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"storageEquipmentIds\": [\n    \"{{deviceId2}}\"\n  ],\n  \"deliveryAddress\": {\n    \"fullName\": \"Sandbox contact\",\n    \"streetLine1\": \"Szewska 1\",\n    \"postalCode\": \"30-000\",\n    \"city\": \"Krakow\",\n    \"countryCode\": \"PL\",\n    \"phoneNumber\": \"+48123456789\"\n  },\n  \"contactPersonEmail\": \"{{contactEmail}}\",\n  \"employeeId\": \"{{employeeId2}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.test(\"Expected state: RECEIVED\", () => pm.expect(data.state).to.eql(\"RECEIVED\"));",
+                  "if(data.state !== \"RECEIVED\") throw new Error(\"Unexpected state\");",
+                  "pm.expect(data.id).to.be.a(\"string\").and.not.empty; pm.collectionVariables.set(\"redeploymentId2\", data.id);",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "SHIP (expected 409)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/redeployments/{{redeploymentId2}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"SHIP\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409\", () => pm.response.to.have.status(409));",
+                  "if (pm.response.code !== 409) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.expect(data.message.split(\"Allowed actions: \")[1]).to.eql(\"[PREPARE, SET_DELAY]\");",
+                  "pm.expect(data.message).to.include(\"Allowed actions:\");",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PREPARE",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/redeployments/{{redeploymentId2}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"PREPARE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.expect(data.id).to.eql(pm.collectionVariables.get(\"redeploymentId2\"));",
+                  "pm.test(\"Expected state: PREPARING\", () => pm.expect(data.state).to.eql(\"PREPARING\"));",
+                  "if(data.state !== \"PREPARING\") throw new Error(\"Unexpected state\");",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "SHIP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/redeployments/{{redeploymentId2}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"SHIP\",\n  \"params\": {\n    \"deliveryCompany\": \"Sandbox carrier\",\n    \"deliveryNumber\": \"SANDBOX-{{runTag}}\",\n    \"deliveryUrl\": \"https://example.com/tracking/{{runTag}}\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.expect(data.equipmentDelivery.company).to.eql(\"Sandbox carrier\"); pm.expect(data.equipmentDelivery.number).to.eql(\"SANDBOX-\"+pm.collectionVariables.get(\"runTag\")); pm.expect(data.equipmentDelivery.url).to.eql(\"https://example.com/tracking/\"+pm.collectionVariables.get(\"runTag\"));",
+                  "pm.expect(data.id).to.eql(pm.collectionVariables.get(\"redeploymentId2\"));",
+                  "pm.test(\"Expected state: SENT\", () => pm.expect(data.state).to.eql(\"SENT\"));",
+                  "if(data.state !== \"SENT\") throw new Error(\"Unexpected state\");",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "OUT_FOR_DELIVERY",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/redeployments/{{redeploymentId2}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"OUT_FOR_DELIVERY\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.expect(data.id).to.eql(pm.collectionVariables.get(\"redeploymentId2\"));",
+                  "pm.test(\"Expected state: OUT_FOR_DELIVERY\", () => pm.expect(data.state).to.eql(\"OUT_FOR_DELIVERY\"));",
+                  "if(data.state !== \"OUT_FOR_DELIVERY\") throw new Error(\"Unexpected state\");",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELIVERY_FAILED (expected 400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/redeployments/{{redeploymentId2}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"DELIVERY_FAILED\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "if (pm.response.code !== 400) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELIVERY_FAILED",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/redeployments/{{redeploymentId2}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"DELIVERY_FAILED\",\n  \"params\": {\n    \"deliveryFailureReason\": \"Recipient unavailable\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.expect(data.deliveryFailureReason).to.eql(\"Recipient unavailable\");",
+                  "pm.expect(data.id).to.eql(pm.collectionVariables.get(\"redeploymentId2\"));",
+                  "pm.test(\"Expected state: DELIVERY_FAILED\", () => pm.expect(data.state).to.eql(\"DELIVERY_FAILED\"));",
+                  "if(data.state !== \"DELIVERY_FAILED\") throw new Error(\"Unexpected state\");",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELIVER",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/redeployments/{{redeploymentId2}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"DELIVER\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.expect(data.id).to.eql(pm.collectionVariables.get(\"redeploymentId2\"));",
+                  "pm.test(\"Expected state: DELIVERED\", () => pm.expect(data.state).to.eql(\"DELIVERED\"));",
+                  "if(data.state !== \"DELIVERED\") throw new Error(\"Unexpected state\");",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Read delivered redeployment",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/redeployments/{{redeploymentId2}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.expect(data.id).to.eql(pm.collectionVariables.get(\"redeploymentId2\"));",
+                  "pm.test(\"Expected state: DELIVERED\", () => pm.expect(data.state).to.eql(\"DELIVERED\"));",
+                  "if(data.state !== \"DELIVERED\") throw new Error(\"Unexpected state\");",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Read equipment and check owner",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/user-equipment/{{deviceId2}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.expect(data.state).to.eql(\"ACTIVE\"); pm.expect(data.user.id).to.eql(pm.collectionVariables.get(\"employeeId2\"));",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4 · Deliver to a company address",
+      "item": [
+        {
+          "name": "Create redeployment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/redeployments",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"storageEquipmentIds\": [\n    \"{{deviceId3}}\"\n  ],\n  \"deliveryAddress\": {\n    \"fullName\": \"Sandbox contact\",\n    \"streetLine1\": \"Szewska 1\",\n    \"postalCode\": \"30-000\",\n    \"city\": \"Krakow\",\n    \"countryCode\": \"PL\",\n    \"phoneNumber\": \"+48123456789\"\n  },\n  \"contactPersonEmail\": \"{{contactEmail}}\",\n  \"companyAddressId\": \"{{companyAddressId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.test(\"Expected state: RECEIVED\", () => pm.expect(data.state).to.eql(\"RECEIVED\"));",
+                  "if(data.state !== \"RECEIVED\") throw new Error(\"Unexpected state\");",
+                  "pm.expect(data.id).to.be.a(\"string\").and.not.empty; pm.collectionVariables.set(\"redeploymentId3\", data.id);",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "SHIP (expected 409)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/redeployments/{{redeploymentId3}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"SHIP\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409\", () => pm.response.to.have.status(409));",
+                  "if (pm.response.code !== 409) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.expect(data.message.split(\"Allowed actions: \")[1]).to.eql(\"[PREPARE, SET_DELAY]\");",
+                  "pm.expect(data.message).to.include(\"Allowed actions:\");",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PREPARE",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/redeployments/{{redeploymentId3}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"PREPARE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.expect(data.id).to.eql(pm.collectionVariables.get(\"redeploymentId3\"));",
+                  "pm.test(\"Expected state: PREPARING\", () => pm.expect(data.state).to.eql(\"PREPARING\"));",
+                  "if(data.state !== \"PREPARING\") throw new Error(\"Unexpected state\");",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "SHIP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/redeployments/{{redeploymentId3}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"SHIP\",\n  \"params\": {\n    \"deliveryCompany\": \"Sandbox carrier\",\n    \"deliveryNumber\": \"SANDBOX-{{runTag}}\",\n    \"deliveryUrl\": \"https://example.com/tracking/{{runTag}}\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.expect(data.equipmentDelivery.company).to.eql(\"Sandbox carrier\"); pm.expect(data.equipmentDelivery.number).to.eql(\"SANDBOX-\"+pm.collectionVariables.get(\"runTag\")); pm.expect(data.equipmentDelivery.url).to.eql(\"https://example.com/tracking/\"+pm.collectionVariables.get(\"runTag\"));",
+                  "pm.expect(data.id).to.eql(pm.collectionVariables.get(\"redeploymentId3\"));",
+                  "pm.test(\"Expected state: SENT\", () => pm.expect(data.state).to.eql(\"SENT\"));",
+                  "if(data.state !== \"SENT\") throw new Error(\"Unexpected state\");",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "OUT_FOR_DELIVERY",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/redeployments/{{redeploymentId3}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"OUT_FOR_DELIVERY\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.expect(data.id).to.eql(pm.collectionVariables.get(\"redeploymentId3\"));",
+                  "pm.test(\"Expected state: OUT_FOR_DELIVERY\", () => pm.expect(data.state).to.eql(\"OUT_FOR_DELIVERY\"));",
+                  "if(data.state !== \"OUT_FOR_DELIVERY\") throw new Error(\"Unexpected state\");",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELIVER",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/redeployments/{{redeploymentId3}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"DELIVER\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.expect(data.id).to.eql(pm.collectionVariables.get(\"redeploymentId3\"));",
+                  "pm.test(\"Expected state: DELIVERED\", () => pm.expect(data.state).to.eql(\"DELIVERED\"));",
+                  "if(data.state !== \"DELIVERED\") throw new Error(\"Unexpected state\");",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Read delivered redeployment",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/redeployments/{{redeploymentId3}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.expect(data.id).to.eql(pm.collectionVariables.get(\"redeploymentId3\"));",
+                  "pm.test(\"Expected state: DELIVERED\", () => pm.expect(data.state).to.eql(\"DELIVERED\"));",
+                  "if(data.state !== \"DELIVERED\") throw new Error(\"Unexpected state\");",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Read equipment and check owner",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/user-equipment/{{deviceId3}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.expect(data.storage.id).to.eql(pm.collectionVariables.get(\"companyAddressId\"));",
+                  "pm.expect(data.state).to.eql(\"ACTIVE\"); pm.expect(data.user.role).to.eql(\"STORAGE\"); pm.expect(data.storage.id).to.be.a(\"string\");",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5 · Cancel a new redeployment",
+      "item": [
+        {
+          "name": "Create redeployment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/redeployments",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"storageEquipmentIds\": [\n    \"{{deviceId4}}\"\n  ],\n  \"deliveryAddress\": {\n    \"fullName\": \"Sandbox contact\",\n    \"streetLine1\": \"Szewska 1\",\n    \"postalCode\": \"30-000\",\n    \"city\": \"Krakow\",\n    \"countryCode\": \"PL\",\n    \"phoneNumber\": \"+48123456789\"\n  },\n  \"contactPersonEmail\": \"{{contactEmail}}\",\n  \"employeeId\": \"{{employeeId1}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.test(\"Expected state: RECEIVED\", () => pm.expect(data.state).to.eql(\"RECEIVED\"));",
+                  "if(data.state !== \"RECEIVED\") throw new Error(\"Unexpected state\");",
+                  "pm.expect(data.id).to.be.a(\"string\").and.not.empty; pm.collectionVariables.set(\"redeploymentId4\", data.id);",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cancel before preparation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/redeployments/{{redeploymentId4}}/cancel"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.expect(data.id).to.eql(pm.collectionVariables.get(\"redeploymentId4\"));",
+                  "pm.test(\"Expected state: DECLINED\", () => pm.expect(data.state).to.eql(\"DECLINED\"));",
+                  "if(data.state !== \"DECLINED\") throw new Error(\"Unexpected state\");",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Read equipment and check owner",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/user-equipment/{{deviceId4}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.expect(data.state).to.eql(\"ACTIVE\"); pm.expect(data.user.role).to.eql(\"STORAGE\"); pm.expect(data.storage.id).to.be.a(\"string\");",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "6 · Check error handling",
+      "item": [
+        {
+          "name": "UNKNOWN_ACTION (expected 400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/redeployments/{{redeploymentId1}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"UNKNOWN_ACTION\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "if (pm.response.code !== 400) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Missing action (expected 400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/redeployments/{{redeploymentId1}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "if (pm.response.code !== 400) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "7 · Invalid transitions and missing records",
+      "item": [
+        {
+          "name": "Reject PREPARE on completed record",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/redeployments/{{redeploymentId1}}/simulate",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"PREPARE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409\",()=>pm.response.to.have.status(409));",
+                  "if(pm.response.code !== 409) pm.execution.setNextRequest(null);",
+                  "else { try { const data=pm.response.json(); pm.expect(data.message.split(\"Allowed actions: \")[1]).to.eql(\"[]\"); } catch(error) {pm.test(\"Response contract\",()=>{throw error;});pm.execution.setNextRequest(null);} }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reject SHIP on completed record",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/redeployments/{{redeploymentId1}}/simulate",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"SHIP\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409\",()=>pm.response.to.have.status(409));",
+                  "if(pm.response.code !== 409) pm.execution.setNextRequest(null);",
+                  "else { try { const data=pm.response.json(); pm.expect(data.message.split(\"Allowed actions: \")[1]).to.eql(\"[]\"); } catch(error) {pm.test(\"Response contract\",()=>{throw error;});pm.execution.setNextRequest(null);} }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reject OUT_FOR_DELIVERY on completed record",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/redeployments/{{redeploymentId1}}/simulate",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"OUT_FOR_DELIVERY\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409\",()=>pm.response.to.have.status(409));",
+                  "if(pm.response.code !== 409) pm.execution.setNextRequest(null);",
+                  "else { try { const data=pm.response.json(); pm.expect(data.message.split(\"Allowed actions: \")[1]).to.eql(\"[]\"); } catch(error) {pm.test(\"Response contract\",()=>{throw error;});pm.execution.setNextRequest(null);} }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reject DELIVERY_FAILED on completed record",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/redeployments/{{redeploymentId1}}/simulate",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"DELIVERY_FAILED\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409\",()=>pm.response.to.have.status(409));",
+                  "if(pm.response.code !== 409) pm.execution.setNextRequest(null);",
+                  "else { try { const data=pm.response.json(); pm.expect(data.message.split(\"Allowed actions: \")[1]).to.eql(\"[]\"); } catch(error) {pm.test(\"Response contract\",()=>{throw error;});pm.execution.setNextRequest(null);} }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reject DELIVER on completed record",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/redeployments/{{redeploymentId1}}/simulate",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"DELIVER\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409\",()=>pm.response.to.have.status(409));",
+                  "if(pm.response.code !== 409) pm.execution.setNextRequest(null);",
+                  "else { try { const data=pm.response.json(); pm.expect(data.message.split(\"Allowed actions: \")[1]).to.eql(\"[]\"); } catch(error) {pm.test(\"Response contract\",()=>{throw error;});pm.execution.setNextRequest(null);} }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Missing record returns 404",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/redeployments/SANDBOX-NONEXISTENT-RECORD/simulate",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"PREPARE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\",()=>pm.response.to.have.status(404));",
+                  "if(pm.response.code !== 404) pm.execution.setNextRequest(null);",
+                  "else { try { const data=pm.response.json(); pm.expect(data.message).to.be.a(\"string\").and.not.empty; } catch(error) {pm.test(\"Response contract\",()=>{throw error;});pm.execution.setNextRequest(null);} }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reject a device that is now with an employee instead of storage",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/redeployments",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"storageEquipmentIds\": [\n    \"{{deviceId1}}\"\n  ],\n  \"deliveryAddress\": {\n    \"fullName\": \"Sandbox contact\",\n    \"streetLine1\": \"Szewska 1\",\n    \"postalCode\": \"30-000\",\n    \"city\": \"Krakow\",\n    \"countryCode\": \"PL\",\n    \"phoneNumber\": \"+48123456789\"\n  },\n  \"contactPersonEmail\": \"{{contactEmail}}\",\n  \"employeeId\": \"{{employeeId1}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\",()=>pm.response.to.have.status(400));",
+                  "if(pm.response.code!==400) pm.execution.setNextRequest(null);",
+                  "else { try { const data=pm.response.json(); pm.expect(data.message).to.include(\"Equipment not available for delivery country:\"); } catch(error){pm.test(\"Response contract\",()=>{throw error;});pm.execution.setNextRequest(null);} }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reject SET_DELAY on completed record",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/redeployments/{{redeploymentId1}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"SET_DELAY\",\n  \"params\": {\n    \"delayReason\": \"COURIER_ISSUES\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409\", () => pm.response.to.have.status(409));",
+                  "if (pm.response.code !== 409) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.expect(data.message).to.include(\"Allowed actions: []\");",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reject CLEAR_DELAY on completed record",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/redeployments/{{redeploymentId1}}/simulate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"CLEAR_DELAY\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409\", () => pm.response.to.have.status(409));",
+                  "if (pm.response.code !== 409) { pm.execution.setNextRequest(null); } else {",
+                  "try {",
+                  "const data = pm.response.json();",
+                  "pm.expect(data.message).to.include(\"Allowed actions: []\");",
+                  "} catch(error) { pm.test(\"Response contract\", () => { throw error; }); pm.execution.setNextRequest(null); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "8 · Optional second-company isolation check",
+      "item": [
+        {
+          "name": "Other company record returns 404",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/redeployments/{{otherCompanyRecordId}}/simulate",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"PREPARE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if(!pm.collectionVariables.get(\"otherCompanyRecordId\")){pm.execution.skipRequest(); console.warn(\"SKIPPED: set a real record ID belonging to a second sandbox company to verify isolation.\");}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\",()=>pm.response.to.have.status(404));",
+                  "if(pm.response.code !== 404) pm.execution.setNextRequest(null);",
+                  "else { try { const data=pm.response.json(); pm.expect(data.message).to.be.a(\"string\").and.not.empty; } catch(error) {pm.test(\"Response contract\",()=>{throw error;});pm.execution.setNextRequest(null);} }"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,100 @@
+---
+title: "API basics"
+description: "Request format, authentication and limits of simulation on dev."
+---
+
+Simulation replaces operational steps so you can test your integration without
+waiting for a carrier or technician. Use it only with your sandbox company on dev.
+Start with [Sandbox setup](/sandbox/overview) to obtain access and test data.
+
+## Send an action
+
+Use a **read & write** API token belonging to your sandbox company:
+
+```http
+POST https://dev.backend.tequipy.com/integration/orders/{id}/simulate
+Authorization: Bearer <your sandbox API token>
+Content-Type: application/json
+```
+
+```json
+{"action":"PREPARE"}
+```
+
+Create the record through the regular Integration API first. Replace `{id}` with
+its returned ID. Parameterized actions use a `params` object:
+
+```json
+{
+  "action": "SHIP",
+  "params": {
+    "deliveryCompany": "Sandbox carrier",
+    "deliveryNumber": "SANDBOX-001",
+    "deliveryUrl": "https://example.com/tracking/SANDBOX-001"
+  }
+}
+```
+
+| Resource | Path after `/integration` | Actions, parameters and worked example |
+| --- | --- | --- |
+| Orders | `/orders/{id}/simulate` | [Order walkthrough and action table](/sandbox/orders) |
+| Repairs | `/repairs/{id}/simulate` | [Repair walkthrough and action table](/sandbox/repairs) |
+| Collections | `/collections/{id}/simulate` | [Collection walkthrough and action table](/sandbox/collections) |
+| Offboardings | `/offboardings/{id}/simulate` | [Offboarding walkthrough and action table](/sandbox/offboardings) |
+| Redeployments | `/redeployments/{id}/simulate` | [Redeployment walkthrough and action table](/sandbox/redeployments) |
+
+Every successful action returns HTTP `200` with the same resource representation
+as the corresponding `GET /{resource}/{id}`. Read the resulting `state`, then
+select the next action from that resource's action table.
+
+Simulation has no generic `SET_STATE` action. The [state diagrams](/sandbox/state-diagrams)
+also show operational transitions which are unavailable through simulation.
+Creating records, cancelling requests and approving or rejecting repair quotes use
+regular Integration API endpoints, even during a sandbox run.
+
+## Dates and parameters
+
+Use `YYYY-MM-DD` for dates and `YYYY-MM-DDTHH:mm:ss` for local date-times,
+without `Z` or a timezone offset. Parameter names differ by resource: repair pickup
+uses `scheduledAt`, collection/offboarding pickup uses `courierScheduledAt`, order
+delivery uses `deliveryDate` and redeployment delivery uses `deliveredAt`.
+Use the exact names in each action table.
+
+## Error contract
+
+| Status | Meaning | Next step |
+| --- | --- | --- |
+| `400` | Unknown or missing action, invalid parameter or malformed request. | Correct the JSON using the action table. |
+| `401` | Missing or invalid token. | Check your sandbox credentials. |
+| `403` | Insufficient permissions. | Use a read & write token. |
+| `404` | Record missing or outside the token's company. | Check the ID, company and base URL. |
+| `409` | Action cannot run in the current state. | Read the current record and the allowed actions in the error message. |
+| `422` | Business validation failed, for example equipment, billing or pricing setup. | Read the validation message; contact Tequipy for missing configuration. |
+
+State conflicts return a JSON object with a `message`, for example:
+
+```json
+{
+  "message": "Cannot run SHIP on Order in RECEIVED state. Allowed actions: [PREPARE]"
+}
+```
+
+Allowed actions depend on the resource and its current state. A valid action can
+still fail business validation. Cancellation has separate restrictions and can
+return `400` or `422`; see [troubleshooting](/sandbox/troubleshooting).
+
+## Side effects and availability
+
+<Warning>
+  Simulation persists changes, can create billing entries and can send real email
+  and operational notifications. Use controlled recipients. It does not provide
+  a dry run, reset or automatic cleanup.
+</Warning>
+
+These endpoints are available on dev and are disabled in production. Scheduled
+jobs can also advance records, so read the current state after an interrupted run.
+The API does not provide idempotency keys: after a timeout, check whether the
+previous request succeeded before retrying. Repeating creation can create duplicates.
+
+A passing simulation does not prove physical delivery, email receipt, payment,
+refunds or invoice settlement. It also cannot validate a manual service agreement.

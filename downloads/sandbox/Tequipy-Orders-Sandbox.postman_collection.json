@@ -1,0 +1,1342 @@
+{
+  "info": {
+    "_postman_id": "7a902b4e-7a74-4f11-bbd7-14eb86fb8731",
+    "name": "Tequipy Orders Sandbox",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "29 requests for the public sandbox API. Uses a read-write Bearer token. Send discovery requests 01–03, set companyEntityId, employeeId and equipmentId, then run all folders in order with one iteration. Each full run creates three orders: two delivered, one cancelled. Sandbox notifications may be sent. This collection covers orders only."
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const baseUrl = pm.variables.get(\"baseUrl\");",
+          "if (baseUrl !== \"https://dev.backend.tequipy.com/integration\") { pm.execution.setNextRequest(null); pm.execution.skipRequest(); throw new Error(\"Use the supplied sandbox baseUrl.\"); }",
+          "if (!pm.environment.get(\"token\")) { pm.execution.setNextRequest(null); pm.execution.skipRequest(); throw new Error(\"Select the sandbox environment and set your local token value.\"); }",
+          "if (pm.info.requestName.startsWith(\"01 ·\") || !pm.collectionVariables.get(\"runTag\")) {",
+          "  const now = new Date();",
+          "  pm.collectionVariables.set(\"runTag\", now.toISOString().replace(/[^0-9]/g, \"\"));",
+          "  pm.collectionVariables.set(\"today\", now.toISOString().slice(0,10));",
+          "  pm.collectionVariables.set(\"eta\", new Date(now.getTime() + 3 * 86400000).toISOString().slice(0,10));",
+          "  for (const key of [\"deliveryOrderId\", \"failedOrderId\", \"cancelOrderId\"]) pm.collectionVariables.unset(key);",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "companyEntityId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "employeeId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "equipmentId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "runTag",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "today",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "eta",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "deliveryOrderId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "failedOrderId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "cancelOrderId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1 · Find your test data",
+      "description": "Send 01–03 first. Copy your chosen companyEntityId, employeeId and equipmentId into collection variables. Check the employee email before proceeding. This folder does not create records.",
+      "item": [
+        {
+          "name": "01 · List company entities",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/company-entities",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error(\"Unexpected HTTP status. Check the response before continuing.\"); }",
+                  "const result = pm.response.json();",
+                  "pm.test(\"Entity list returned\", () => pm.expect(result.content).to.be.an(\"array\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "02 · List employees",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/users/query?size=100",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error(\"Unexpected HTTP status. Check the response before continuing.\"); }",
+                  "const result = pm.response.json();",
+                  "pm.test(\"User list returned\", () => pm.expect(result.content).to.be.an(\"array\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "03 · Browse the UAE catalogue",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/equipments/query?size=100",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"countryCode\": \"AE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error(\"Unexpected HTTP status. Check the response before continuing.\"); }",
+                  "const result = pm.response.json();",
+                  "pm.test(\"Catalogue is available\", () => pm.expect(result.content).to.be.an(\"array\").and.not.empty);"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "04 · Check the selected employee",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/users/{{employeeId}}",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "for (const key of [\"employeeId\"]) { if (!pm.variables.get(key)) { pm.execution.setNextRequest(null); pm.execution.skipRequest(); throw new Error(\"Set \" + key + \" before running this request.\"); } }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error(\"Unexpected HTTP status. Check the response before continuing.\"); }",
+                  "const result = pm.response.json();",
+                  "pm.test(\"Selected employee returned\", () => pm.expect(result.id).to.eql(pm.variables.get(\"employeeId\")));",
+                  "pm.test(\"Employee is active\", () => pm.expect(result.state).to.eql(\"ACTIVE\"));",
+                  "if (result.state !== \"ACTIVE\") { pm.execution.setNextRequest(null); throw new Error(\"Choose an active employee\"); }"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "05 · List existing orders",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/orders/query?size=100",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error(\"Unexpected HTTP status. Check the response before continuing.\"); }",
+                  "const result = pm.response.json();",
+                  "pm.test(\"Order list returned\", () => pm.expect(result.content).to.be.an(\"array\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "2 · Deliver an order",
+      "description": "Run in order. Creates one order and delivers it. Requests 07 and 14 intentionally expect HTTP 409.",
+      "item": [
+        {
+          "name": "06 · Create a delivery order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/orders",
+            "description": "Creates one sandbox order. Use an employee whose notification address you control.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderType\": \"ASSIGN_EXISTING\",\n  \"companyEntityId\": \"{{companyEntityId}}\",\n  \"employeeId\": \"{{employeeId}}\",\n  \"equipment\": [\n    {\n      \"id\": \"{{equipmentId}}\",\n      \"size\": 1\n    }\n  ],\n  \"deliveryAddress\": {\n    \"fullName\": \"Sandbox delivery\",\n    \"streetLine1\": \"Al Wasl Road 10\",\n    \"postalCode\": \"00000\",\n    \"city\": \"Dubai\",\n    \"countryCode\": \"AE\",\n    \"phoneNumber\": \"+971500000000\"\n  },\n  \"notes\": \"Sandbox {{runTag}} \\u2014 06 \\u00b7 Create a delivery order\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "for (const key of [\"companyEntityId\", \"employeeId\", \"equipmentId\"]) { if (!pm.variables.get(key)) { pm.execution.setNextRequest(null); pm.execution.skipRequest(); throw new Error(\"Set \" + key + \" before running this request.\"); } }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error(\"Unexpected HTTP status. Check the response before continuing.\"); }",
+                  "const result = pm.response.json();",
+                  "pm.test(\"State is RECEIVED\", () => pm.expect(result.state).to.eql(\"RECEIVED\"));",
+                  "if (result.state !== \"RECEIVED\") { pm.execution.setNextRequest(null); throw new Error(\"Unexpected state: \" + result.state); }",
+                  "pm.test(\"Order ID returned\", () => pm.expect(result.id).to.be.a(\"string\").and.not.empty);",
+                  "if (!result.id) { pm.execution.setNextRequest(null); throw new Error(\"Missing order ID\"); }",
+                  "pm.collectionVariables.set(\"deliveryOrderId\", result.id);"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "07 · Reject shipping before preparation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/orders/{{deliveryOrderId}}/simulate",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"SHIP\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "for (const key of [\"deliveryOrderId\"]) { if (!pm.variables.get(key)) { pm.execution.setNextRequest(null); pm.execution.skipRequest(); throw new Error(\"Set \" + key + \" before running this request.\"); } }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409\", () => pm.response.to.have.status(409));",
+                  "if (pm.response.code !== 409) { pm.execution.setNextRequest(null); throw new Error(\"Unexpected HTTP status. Check the response before continuing.\"); }",
+                  "const result = pm.response.json();"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "08 · Prepare",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/orders/{{deliveryOrderId}}/simulate",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"PREPARE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "for (const key of [\"deliveryOrderId\"]) { if (!pm.variables.get(key)) { pm.execution.setNextRequest(null); pm.execution.skipRequest(); throw new Error(\"Set \" + key + \" before running this request.\"); } }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error(\"Unexpected HTTP status. Check the response before continuing.\"); }",
+                  "const result = pm.response.json();",
+                  "pm.test(\"State is PREPARING\", () => pm.expect(result.state).to.eql(\"PREPARING\"));",
+                  "if (result.state !== \"PREPARING\") { pm.execution.setNextRequest(null); throw new Error(\"Unexpected state: \" + result.state); }"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "09 · Ship with tracking",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/orders/{{deliveryOrderId}}/simulate",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"SHIP\",\n  \"params\": {\n    \"deliveryCompany\": \"Sandbox carrier\",\n    \"deliveryNumber\": \"SANDBOX-{{runTag}}\",\n    \"deliveryUrl\": \"https://example.com/tracking/{{runTag}}\",\n    \"estimatedDeliveryDate\": \"{{eta}}\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "for (const key of [\"deliveryOrderId\"]) { if (!pm.variables.get(key)) { pm.execution.setNextRequest(null); pm.execution.skipRequest(); throw new Error(\"Set \" + key + \" before running this request.\"); } }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error(\"Unexpected HTTP status. Check the response before continuing.\"); }",
+                  "const result = pm.response.json();",
+                  "pm.test(\"State is SENT\", () => pm.expect(result.state).to.eql(\"SENT\"));",
+                  "if (result.state !== \"SENT\") { pm.execution.setNextRequest(null); throw new Error(\"Unexpected state: \" + result.state); }",
+                  "pm.test(\"Tracking number saved\", () => pm.expect(result.orderDelivery.number).to.eql(\"SANDBOX-\" + pm.collectionVariables.get(\"runTag\")));",
+                  "pm.test(\"Delivery estimate saved\", () => pm.expect(result.estimatedDeliveryDate).to.eql(pm.collectionVariables.get(\"eta\")));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "10 · Mark out for delivery",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/orders/{{deliveryOrderId}}/simulate",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"OUT_FOR_DELIVERY\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "for (const key of [\"deliveryOrderId\"]) { if (!pm.variables.get(key)) { pm.execution.setNextRequest(null); pm.execution.skipRequest(); throw new Error(\"Set \" + key + \" before running this request.\"); } }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error(\"Unexpected HTTP status. Check the response before continuing.\"); }",
+                  "const result = pm.response.json();",
+                  "pm.test(\"State is OUT_FOR_DELIVERY\", () => pm.expect(result.state).to.eql(\"OUT_FOR_DELIVERY\"));",
+                  "if (result.state !== \"OUT_FOR_DELIVERY\") { pm.execution.setNextRequest(null); throw new Error(\"Unexpected state: \" + result.state); }"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "11 · Deliver",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/orders/{{deliveryOrderId}}/simulate",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"DELIVER\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "for (const key of [\"deliveryOrderId\"]) { if (!pm.variables.get(key)) { pm.execution.setNextRequest(null); pm.execution.skipRequest(); throw new Error(\"Set \" + key + \" before running this request.\"); } }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error(\"Unexpected HTTP status. Check the response before continuing.\"); }",
+                  "const result = pm.response.json();",
+                  "pm.test(\"State is DELIVERED\", () => pm.expect(result.state).to.eql(\"DELIVERED\"));",
+                  "if (result.state !== \"DELIVERED\") { pm.execution.setNextRequest(null); throw new Error(\"Unexpected state: \" + result.state); }"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "12 · Read the delivered order",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/orders/{{deliveryOrderId}}",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "for (const key of [\"deliveryOrderId\"]) { if (!pm.variables.get(key)) { pm.execution.setNextRequest(null); pm.execution.skipRequest(); throw new Error(\"Set \" + key + \" before running this request.\"); } }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error(\"Unexpected HTTP status. Check the response before continuing.\"); }",
+                  "const result = pm.response.json();",
+                  "pm.test(\"State is DELIVERED\", () => pm.expect(result.state).to.eql(\"DELIVERED\"));",
+                  "if (result.state !== \"DELIVERED\") { pm.execution.setNextRequest(null); throw new Error(\"Unexpected state: \" + result.state); }"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "13 · Poll by order ID",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/orders/query",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ids\": [\n    \"{{deliveryOrderId}}\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "for (const key of [\"deliveryOrderId\"]) { if (!pm.variables.get(key)) { pm.execution.setNextRequest(null); pm.execution.skipRequest(); throw new Error(\"Set \" + key + \" before running this request.\"); } }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error(\"Unexpected HTTP status. Check the response before continuing.\"); }",
+                  "const result = pm.response.json();",
+                  "pm.test(\"Only the requested order is returned\", () => { pm.expect(result.content.map(order => order.id)).to.eql([pm.collectionVariables.get(\"deliveryOrderId\")]); pm.expect(result.totalElements).to.eql(1); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "14 · Reject a transition after delivery",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/orders/{{deliveryOrderId}}/simulate",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"PREPARE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "for (const key of [\"deliveryOrderId\"]) { if (!pm.variables.get(key)) { pm.execution.setNextRequest(null); pm.execution.skipRequest(); throw new Error(\"Set \" + key + \" before running this request.\"); } }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409\", () => pm.response.to.have.status(409));",
+                  "if (pm.response.code !== 409) { pm.execution.setNextRequest(null); throw new Error(\"Unexpected HTTP status. Check the response before continuing.\"); }",
+                  "const result = pm.response.json();"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "3 · Handle a failed delivery",
+      "description": "Run in order. Creates a second order, records a refused delivery and then delivers it. Request 18 intentionally expects HTTP 400.",
+      "item": [
+        {
+          "name": "15 · Create an order for a failed delivery",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/orders",
+            "description": "Creates one sandbox order. Use an employee whose notification address you control.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderType\": \"ASSIGN_EXISTING\",\n  \"companyEntityId\": \"{{companyEntityId}}\",\n  \"employeeId\": \"{{employeeId}}\",\n  \"equipment\": [\n    {\n      \"id\": \"{{equipmentId}}\",\n      \"size\": 1\n    }\n  ],\n  \"deliveryAddress\": {\n    \"fullName\": \"Sandbox delivery\",\n    \"streetLine1\": \"Al Wasl Road 10\",\n    \"postalCode\": \"00000\",\n    \"city\": \"Dubai\",\n    \"countryCode\": \"AE\",\n    \"phoneNumber\": \"+971500000000\"\n  },\n  \"notes\": \"Sandbox {{runTag}} \\u2014 15 \\u00b7 Create an order for a failed delivery\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "for (const key of [\"companyEntityId\", \"employeeId\", \"equipmentId\"]) { if (!pm.variables.get(key)) { pm.execution.setNextRequest(null); pm.execution.skipRequest(); throw new Error(\"Set \" + key + \" before running this request.\"); } }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error(\"Unexpected HTTP status. Check the response before continuing.\"); }",
+                  "const result = pm.response.json();",
+                  "pm.test(\"State is RECEIVED\", () => pm.expect(result.state).to.eql(\"RECEIVED\"));",
+                  "if (result.state !== \"RECEIVED\") { pm.execution.setNextRequest(null); throw new Error(\"Unexpected state: \" + result.state); }",
+                  "pm.test(\"Order ID returned\", () => pm.expect(result.id).to.be.a(\"string\").and.not.empty);",
+                  "if (!result.id) { pm.execution.setNextRequest(null); throw new Error(\"Missing order ID\"); }",
+                  "pm.collectionVariables.set(\"failedOrderId\", result.id);"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "16 · Prepare",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/orders/{{failedOrderId}}/simulate",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"PREPARE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "for (const key of [\"failedOrderId\"]) { if (!pm.variables.get(key)) { pm.execution.setNextRequest(null); pm.execution.skipRequest(); throw new Error(\"Set \" + key + \" before running this request.\"); } }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error(\"Unexpected HTTP status. Check the response before continuing.\"); }",
+                  "const result = pm.response.json();",
+                  "pm.test(\"State is PREPARING\", () => pm.expect(result.state).to.eql(\"PREPARING\"));",
+                  "if (result.state !== \"PREPARING\") { pm.execution.setNextRequest(null); throw new Error(\"Unexpected state: \" + result.state); }"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "17 · Ship without tracking details",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/orders/{{failedOrderId}}/simulate",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"SHIP\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "for (const key of [\"failedOrderId\"]) { if (!pm.variables.get(key)) { pm.execution.setNextRequest(null); pm.execution.skipRequest(); throw new Error(\"Set \" + key + \" before running this request.\"); } }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error(\"Unexpected HTTP status. Check the response before continuing.\"); }",
+                  "const result = pm.response.json();",
+                  "pm.test(\"State is SENT\", () => pm.expect(result.state).to.eql(\"SENT\"));",
+                  "if (result.state !== \"SENT\") { pm.execution.setNextRequest(null); throw new Error(\"Unexpected state: \" + result.state); }"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "18 · Require a failure reason",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/orders/{{failedOrderId}}/simulate",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"DELIVERY_FAILED\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "for (const key of [\"failedOrderId\"]) { if (!pm.variables.get(key)) { pm.execution.setNextRequest(null); pm.execution.skipRequest(); throw new Error(\"Set \" + key + \" before running this request.\"); } }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "if (pm.response.code !== 400) { pm.execution.setNextRequest(null); throw new Error(\"Unexpected HTTP status. Check the response before continuing.\"); }",
+                  "const result = pm.response.json();"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "19 · Record a refused delivery",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/orders/{{failedOrderId}}/simulate",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"DELIVERY_FAILED\",\n  \"params\": {\n    \"deliveryFailureReason\": \"Recipient refused the parcel\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "for (const key of [\"failedOrderId\"]) { if (!pm.variables.get(key)) { pm.execution.setNextRequest(null); pm.execution.skipRequest(); throw new Error(\"Set \" + key + \" before running this request.\"); } }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error(\"Unexpected HTTP status. Check the response before continuing.\"); }",
+                  "const result = pm.response.json();",
+                  "pm.test(\"State is DELIVERY_FAILED\", () => pm.expect(result.state).to.eql(\"DELIVERY_FAILED\"));",
+                  "if (result.state !== \"DELIVERY_FAILED\") { pm.execution.setNextRequest(null); throw new Error(\"Unexpected state: \" + result.state); }",
+                  "pm.test(\"Failure reason saved\", () => pm.expect(result.deliveryFailureReason).to.eql(\"Recipient refused the parcel\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "20 · Deliver after the failed attempt",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/orders/{{failedOrderId}}/simulate",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"DELIVER\",\n  \"params\": {\n    \"deliveryDate\": \"{{today}}\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "for (const key of [\"failedOrderId\"]) { if (!pm.variables.get(key)) { pm.execution.setNextRequest(null); pm.execution.skipRequest(); throw new Error(\"Set \" + key + \" before running this request.\"); } }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error(\"Unexpected HTTP status. Check the response before continuing.\"); }",
+                  "const result = pm.response.json();",
+                  "pm.test(\"State is DELIVERED\", () => pm.expect(result.state).to.eql(\"DELIVERED\"));",
+                  "if (result.state !== \"DELIVERED\") { pm.execution.setNextRequest(null); throw new Error(\"Unexpected state: \" + result.state); }"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "21 · Read the final delivery state",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/orders/{{failedOrderId}}",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "for (const key of [\"failedOrderId\"]) { if (!pm.variables.get(key)) { pm.execution.setNextRequest(null); pm.execution.skipRequest(); throw new Error(\"Set \" + key + \" before running this request.\"); } }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error(\"Unexpected HTTP status. Check the response before continuing.\"); }",
+                  "const result = pm.response.json();",
+                  "pm.test(\"State is DELIVERED\", () => pm.expect(result.state).to.eql(\"DELIVERED\"));",
+                  "if (result.state !== \"DELIVERED\") { pm.execution.setNextRequest(null); throw new Error(\"Unexpected state: \" + result.state); }"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "4 · Cancel an order",
+      "description": "Creates a third order and cancels it while RECEIVED. The cancellation state is DECLINED. Request 25 intentionally expects HTTP 404.",
+      "item": [
+        {
+          "name": "22 · Create an order to cancel",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/orders",
+            "description": "Creates one sandbox order. Use an employee whose notification address you control.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderType\": \"ASSIGN_EXISTING\",\n  \"companyEntityId\": \"{{companyEntityId}}\",\n  \"employeeId\": \"{{employeeId}}\",\n  \"equipment\": [\n    {\n      \"id\": \"{{equipmentId}}\",\n      \"size\": 1\n    }\n  ],\n  \"deliveryAddress\": {\n    \"fullName\": \"Sandbox delivery\",\n    \"streetLine1\": \"Al Wasl Road 10\",\n    \"postalCode\": \"00000\",\n    \"city\": \"Dubai\",\n    \"countryCode\": \"AE\",\n    \"phoneNumber\": \"+971500000000\"\n  },\n  \"notes\": \"Sandbox {{runTag}} \\u2014 22 \\u00b7 Create an order to cancel\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "for (const key of [\"companyEntityId\", \"employeeId\", \"equipmentId\"]) { if (!pm.variables.get(key)) { pm.execution.setNextRequest(null); pm.execution.skipRequest(); throw new Error(\"Set \" + key + \" before running this request.\"); } }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error(\"Unexpected HTTP status. Check the response before continuing.\"); }",
+                  "const result = pm.response.json();",
+                  "pm.test(\"State is RECEIVED\", () => pm.expect(result.state).to.eql(\"RECEIVED\"));",
+                  "if (result.state !== \"RECEIVED\") { pm.execution.setNextRequest(null); throw new Error(\"Unexpected state: \" + result.state); }",
+                  "pm.test(\"Order ID returned\", () => pm.expect(result.id).to.be.a(\"string\").and.not.empty);",
+                  "if (!result.id) { pm.execution.setNextRequest(null); throw new Error(\"Missing order ID\"); }",
+                  "pm.collectionVariables.set(\"cancelOrderId\", result.id);"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "23 · Cancel before preparation",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/orders/{{cancelOrderId}}/cancel",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "for (const key of [\"cancelOrderId\"]) { if (!pm.variables.get(key)) { pm.execution.setNextRequest(null); pm.execution.skipRequest(); throw new Error(\"Set \" + key + \" before running this request.\"); } }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error(\"Unexpected HTTP status. Check the response before continuing.\"); }",
+                  "const result = pm.response.json();",
+                  "pm.test(\"State is DECLINED\", () => pm.expect(result.state).to.eql(\"DECLINED\"));",
+                  "if (result.state !== \"DECLINED\") { pm.execution.setNextRequest(null); throw new Error(\"Unexpected state: \" + result.state); }"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "24 · Read the cancelled order",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/orders/{{cancelOrderId}}",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "for (const key of [\"cancelOrderId\"]) { if (!pm.variables.get(key)) { pm.execution.setNextRequest(null); pm.execution.skipRequest(); throw new Error(\"Set \" + key + \" before running this request.\"); } }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error(\"Unexpected HTTP status. Check the response before continuing.\"); }",
+                  "const result = pm.response.json();",
+                  "pm.test(\"State is DECLINED\", () => pm.expect(result.state).to.eql(\"DECLINED\"));",
+                  "if (result.state !== \"DECLINED\") { pm.execution.setNextRequest(null); throw new Error(\"Unexpected state: \" + result.state); }"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "25 · Read an unknown order",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/orders/SANDBOX-NOT-FOUND",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+                  "if (pm.response.code !== 404) { pm.execution.setNextRequest(null); throw new Error(\"Unexpected HTTP status. Check the response before continuing.\"); }",
+                  "const result = pm.response.json();"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "5 · Check error handling",
+      "description": "Run after folder 2. Requests 26–27 intentionally expect HTTP 400.",
+      "item": [
+        {
+          "name": "26 · Reject an unknown action",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/orders/{{deliveryOrderId}}/simulate",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"UNKNOWN_ACTION\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "for (const key of [\"deliveryOrderId\"]) { if (!pm.variables.get(key)) { pm.execution.setNextRequest(null); pm.execution.skipRequest(); throw new Error(\"Set \" + key + \" before running this request.\"); } }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "if (pm.response.code !== 400) { pm.execution.setNextRequest(null); throw new Error(\"Unexpected HTTP status. Check the response before continuing.\"); }",
+                  "const result = pm.response.json();"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "27 · Require an action",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/orders/{{deliveryOrderId}}/simulate",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "for (const key of [\"deliveryOrderId\"]) { if (!pm.variables.get(key)) { pm.execution.setNextRequest(null); pm.execution.skipRequest(); throw new Error(\"Set \" + key + \" before running this request.\"); } }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                  "if (pm.response.code !== 400) { pm.execution.setNextRequest(null); throw new Error(\"Unexpected HTTP status. Check the response before continuing.\"); }",
+                  "const result = pm.response.json();"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "28 · Query with an empty ID filter",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/orders/query?size=100",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ids\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error(\"Unexpected HTTP status. Check the response before continuing.\"); }",
+                  "const result = pm.response.json();",
+                  "pm.test(\"Empty filter still returns orders\", () => pm.expect(result.totalElements).to.be.above(0));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "29 · Query an unknown ID",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/orders/query",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ids\": [\n    \"SANDBOX-NOT-FOUND\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error(\"Unexpected HTTP status. Check the response before continuing.\"); }",
+                  "const result = pm.response.json();",
+                  "pm.test(\"No unrelated orders returned\", () => { pm.expect(result.content).to.eql([]); pm.expect(result.totalElements).to.eql(0); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    }
+  ]
+}
