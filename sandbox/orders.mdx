@@ -30,7 +30,7 @@ Send requests **01–03** in **Find your test data**. Use their responses to fil
 | --- | --- |
 | `companyEntityId` | Your company entity ID from request 01: `GET /company-entities`. |
 | `employeeId` | An active test employee ID from request 02: `POST /users/query` with `{}`. Check that the employee’s email addresses are ones you control. |
-| `equipmentId` | An available item ID from request 03: `POST /equipments/query` with `{"countryCode":"AE"}`. Choose an item with a price and no temporary-unavailability flag. |
+| `equipmentId` | An available item ID from request 03: `POST /equipments/query` with `{"countryCode":"AE"}`. Choose an item with a price and no temporary-unavailability flag. Skip items with `details.customToOrder: true`, because the collection expects `PREPARING` after `PREPARE`. |
 
 The collection uses a UAE delivery address. Keep the selected equipment and delivery country consistent. If you need a different country or additional test employees, ask your Tequipy contact to prepare them.
 
@@ -152,6 +152,12 @@ is included for integrations that use that order type.
 | `OUT_FOR_DELIVERY` | `SENT` | None. |
 | `DELIVERY_FAILED` | `SENT`, `OUT_FOR_DELIVERY` | Required `deliveryFailureReason`. |
 | `DELIVER` | `SENT`, `OUT_FOR_DELIVERY`, `DELIVERY_FAILED` | Optional `deliveryDate` (`YYYY-MM-DD`); otherwise the sandbox uses its current date. |
+
+### CTO items and keyboard layouts
+
+`PREPARE` moves an order to `AWAITING_CTO_ORDER` instead of `PREPARING` when an item is custom to order (CTO). An item is CTO when its `POST /equipments/query` result has `details.customToOrder: true`. An item is also CTO when you send a `keyboardLayoutId` for it, even for the model's own keyboard.
+
+`keyboardLayoutId` is optional on each `equipment` item. Leave it out to keep the keyboard of the catalogue model. It takes a keyboard layout ID, not a parameter value ID from `GET /specification-parameters/{modelType}`. Ask your Tequipy contact for the keyboard layout IDs. `SHIP` returns `422` when a `keyboardLayoutId` on the order is not a keyboard layout ID.
 
 ## 4. Read the result
 
